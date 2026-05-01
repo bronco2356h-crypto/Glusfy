@@ -1,13 +1,32 @@
-export const PRICING = {
-  baño: {
-    esencial: { total: 9900, monthly: 275 },
-    premium: { total: 14900, monthly: 414 }
-  },
-  cocina: {
-    esencial: { total: 12900, monthly: 358 },
-    premium: { total: 19900, monthly: 553 }
-  }
+export const RATES = {
+  baño: 1100,
+  cocina: 1480
 };
+
+export const PLAN_MULTIPLIERS = {
+  esencial: 1,
+  confort: 1.45,
+  premium: 1.9
+};
+
+export const M2_OPTIONS = [
+  { label: 'Menos de 5m²', value: 4 },
+  { label: '5-8m²', value: 6 },
+  { label: '8-12m²', value: 10 },
+  { label: 'Más de 12m²', value: 14 }
+];
+
+export const ESTADO_OPTIONS = [
+  { id: 'total', label: 'Necesita reforma total', multiplier: 1 },
+  { id: 'acabados', label: 'Solo acabados', multiplier: 0.7 },
+  { id: 'parcial', label: 'Reforma parcial', multiplier: 0.85 }
+];
+
+export const ACCESO_OPTIONS = [
+  { id: 'facil', label: 'Fácil acceso (planta baja / ascensor)', extra: 0 },
+  { id: 'escaleras', label: 'Escaleras sin ascensor', extra: 0.05 },
+  { id: 'complicado', label: 'Acceso complicado', extra: 0.08 }
+];
 
 export const PALETTES = {
   baño: {

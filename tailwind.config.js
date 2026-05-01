@@ -7,16 +7,16 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"DM Sans"', 'sans-serif'],
-        display: ['"Playfair Display"', 'serif'],
+        sans: ['"Inter"', 'sans-serif'],
+        display: ['"Outfit"', 'sans-serif'],
       },
       colors: {
         brand: {
-          cream: '#FAF8F4',
-          dark: '#1A1714',
-          accent: '#C4662A',
-          border: '#E8E4DF',
-          muted: '#7A756F',
+          bg: '#FFFFFF',
+          dark: '#0F172A',
+          accent: '#FF4F00',
+          border: '#E2E8F0',
+          muted: '#64748B',
         }
       }
     },
