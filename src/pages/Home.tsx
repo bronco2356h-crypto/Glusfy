@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Camera, Palette, Sparkles, CalendarCheck, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Home() {
   const { t } = useTranslation();

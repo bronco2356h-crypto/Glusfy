@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
-import { ArrowLeft, ChevronRight, UploadCloud, GripVertical, CheckCircle2, Star, ShieldCheck, Clock } from 'lucide-react';
+import { ArrowLeft, UploadCloud, GripVertical, CheckCircle2, Star, ShieldCheck, Clock } from 'lucide-react';
 import { RATES, PLAN_MULTIPLIERS, M2_OPTIONS, ESTADO_OPTIONS, ACCESO_OPTIONS, PALETTES } from '../lib/constants';
 import { saveLead } from '../lib/firebase';
 
