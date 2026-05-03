@@ -341,7 +341,7 @@ export default function Configurator() {
                   </div>
                 </div>
 
-                {/* Validación HUECO 2 */}
+                {/* Validación HUECO 2 - Humedades */}
                 {config.humedades && config.alcance === 'acabados' && (
                   <div className="bg-red-50 border-2 border-red-100 p-6 rounded-2xl flex gap-4">
                     <AlertTriangle className="w-10 h-10 text-red-600 shrink-0" />
@@ -349,6 +349,18 @@ export default function Configurator() {
                       <p className="font-bold text-red-900">Aviso de seguridad</p>
                       <p className="text-sm text-red-800">Has marcado humedades pero solo acabados. Te recomendamos una reforma parcial para sanear las instalaciones.</p>
                       <button onClick={() => setConfig({...config, alcance: 'parcial'})} className="mt-2 text-sm font-bold text-red-600 underline hover:no-underline">Cambiar a Reforma Parcial</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Validación HUECO 2 - Antigüedad */}
+                {config.antiguedad === '+15' && config.alcance === 'acabados' && (
+                  <div className="bg-amber-50 border-2 border-amber-100 p-6 rounded-2xl flex gap-4">
+                    <AlertTriangle className="w-10 h-10 text-amber-600 shrink-0" />
+                    <div>
+                      <p className="font-bold text-amber-900">Recomendación técnica</p>
+                      <p className="text-sm text-amber-800">Tu vivienda tiene más de 15 años. Al reformar, te aconsejamos revisar fontanería y electricidad para evitar averías futuras tras pintar.</p>
+                      <button onClick={() => setConfig({...config, alcance: 'parcial'})} className="mt-2 text-sm font-bold text-amber-600 underline hover:no-underline">Ver Reforma Parcial (Instalaciones)</button>
                     </div>
                   </div>
                 )}
