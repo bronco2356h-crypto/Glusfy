@@ -37,43 +37,24 @@ export default async function handler(req: any, res: any) {
               },
               {
                 type: 'text',
-                text: `Eres un validador estricto de imágenes para un servicio de reformas de interiores.
+                text: `Analiza esta imagen y responde ÚNICAMENTE con JSON válido, sin texto adicional.
 
-PASO 1 — VALIDACIÓN (obligatorio antes de todo):
-Responde internamente a estas preguntas:
-1. ¿La imagen muestra el INTERIOR (hay techo visible) de una cocina o baño?
-2. ¿El espacio es el tema principal (no el fondo de una foto de personas/animales)?
-3. ¿NO hay cielo, jardín, piscina, terraza, calle ni exterior visible?
-4. ¿NO es un salón, dormitorio, pasillo, oficina, garaje?
+PRIMERO decide si la imagen es válida. Es válida SOLO si muestra claramente el INTERIOR de una cocina o un baño (paredes, suelo y techo visibles, sin cielo ni exterior).
 
-Si cualquier respuesta es NO → RECHAZA.
+NO es válida si ves cualquiera de esto:
+- Exterior: jardín, terraza, piscina, calle, cielo, árboles, césped, horizonte
+- Personas, animales, objetos sueltos
+- Salón, dormitorio, pasillo, escaleras, garaje, oficina
+- Solo fondo: la cocina/baño aparece de fondo de otra cosa
 
-RECHAZA SIEMPRE si ves:
-- Cielo, nubes, horizonte, vegetación exterior, jardín, piscina, terraza
-- Personas o animales como tema principal
-- Salón, comedor, dormitorio, pasillo, garaje, escaleras
-- Comida, objetos sueltos, ropa, pantallas
-- Foto borrosa o demasiado oscura para distinguir el espacio
+Formato de respuesta si NO es válida:
+{"valido":false,"descripcion":"<describe en 5 palabras qué ves>"}
 
-Si rechazas, responde EXACTAMENTE (sin más texto):
-{"error":"not_a_room","descripcion":"<qué ves realmente, máx 6 palabras en español>"}
+Formato de respuesta si SÍ es válida (cocina o baño interior):
+{"valido":true,"largo":<1-15>,"ancho":<1-10>,"alto":<2-4>,"forma":"rectangular|irregular","confianza":"alta|media|baja"}
 
-SOLO acepta si ves claramente paredes interiores + suelo + techo de una COCINA (encimera, muebles cocina, fregadero) o BAÑO (sanitarios, azulejos de baño, ducha, bañera).
-
-Si aceptas, estima dimensiones con estas referencias:
-- Puerta estándar: 2,1 m alto, 0,8 m ancho
-- Encimera cocina: 0,9 m alto, 0,6 m fondo
-- Sanitario WC: 0,7 m largo
-- Altura libre: 2,5 m (moderno), 2,8 m (antiguo)
-
-Responde ÚNICAMENTE con JSON, sin texto adicional:
-{
-  "largo": <número 1-15, un decimal>,
-  "ancho": <número 1-10, un decimal>,
-  "alto": <número 2-4, un decimal>,
-  "forma": "<'rectangular' o 'irregular'>",
-  "confianza": "<'alta', 'media' o 'baja'>"
-}`,
+Referencias para estimar dimensiones:
+puerta=2.1m alto, encimera=0.9m alto, WC=0.7m largo, altura estándar=2.5m`,
               },
             ],
           },
@@ -88,22 +69,37 @@ Responde ÚNICAMENTE con JSON, sin texto adicional:
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
 
-    const jsonMatch = text.match(/\{[\s\S]*?\}/);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
 
-      // IA detectó que no es cocina/baño
+      // Nuevo formato con campo "valido"
+      if (parsed.valido === false) {
+        return res.json({ error: 'not_a_room', descripcion: parsed.descripcion || 'imagen no válida' });
+      }
+      if (parsed.valido === true) {
+        return res.json({
+          largo: Math.min(15, Math.max(1, parseFloat(parsed.largo) || 3.5)),
+          ancho: Math.min(10, Math.max(1, parseFloat(parsed.ancho) || 2.5)),
+          alto: Math.min(4, Math.max(2, parseFloat(parsed.alto) || 2.5)),
+          forma: parsed.forma === 'irregular' ? 'irregular' : 'rectangular',
+          confianza: parsed.confianza || 'media',
+        });
+      }
+
+      // Formato antiguo (fallback)
       if (parsed.error === 'not_a_room') {
         return res.json({ error: 'not_a_room', descripcion: parsed.descripcion || 'imagen no válida' });
       }
-
-      return res.json({
-        largo: Math.min(15, Math.max(1, parseFloat(parsed.largo) || 3.5)),
-        ancho: Math.min(10, Math.max(1, parseFloat(parsed.ancho) || 2.5)),
-        alto: Math.min(4, Math.max(2, parseFloat(parsed.alto) || 2.5)),
-        forma: parsed.forma === 'irregular' ? 'irregular' : 'rectangular',
-        confianza: parsed.confianza || 'baja',
-      });
+      if (parsed.largo) {
+        return res.json({
+          largo: Math.min(15, Math.max(1, parseFloat(parsed.largo) || 3.5)),
+          ancho: Math.min(10, Math.max(1, parseFloat(parsed.ancho) || 2.5)),
+          alto: Math.min(4, Math.max(2, parseFloat(parsed.alto) || 2.5)),
+          forma: parsed.forma === 'irregular' ? 'irregular' : 'rectangular',
+          confianza: parsed.confianza || 'baja',
+        });
+      }
     }
 
     throw new Error('Could not parse JSON from response');
