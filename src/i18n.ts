@@ -76,7 +76,7 @@ const resources = {
         aiRenderTitle: "Vista previa real",
         aiRenderDesc: "Ves el resultado final antes de empezar. Sin comprometerte a nada.",
         warrantyTitle: "Garantía 2 años",
-        warrantyDesc: "Toda nuestra obra tiene garantía de 2 años por contrato. Si algo falla, volvemos sin coste adicional."
+        warrantyDesc: "Toda nuestra obra tiene garantía de 2 años sobre mano de obra y materiales. Si algo falla por nuestra ejecución, volvemos sin coste adicional."
       },
       footer: {
         legal: "Aviso legal",
