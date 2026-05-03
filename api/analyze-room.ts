@@ -25,7 +25,7 @@ export default async function handler(req: any, res: any) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: 256,
         messages: [
           {
@@ -75,7 +75,7 @@ puerta=2.1m alto, encimera=0.9m alto, WC=0.7m largo, altura estándar=2.5m`,
 
       // Nuevo formato con campo "valido"
       if (parsed.valido === false) {
-        return res.json({ error: 'not_a_room', descripcion: parsed.descripcion || 'imagen no válida' });
+        return res.json({ error: 'not_a_room', descripcion: parsed.descripcion || 'imagen no válida', _v: 3 });
       }
       if (parsed.valido === true) {
         return res.json({
@@ -84,6 +84,7 @@ puerta=2.1m alto, encimera=0.9m alto, WC=0.7m largo, altura estándar=2.5m`,
           alto: Math.min(4, Math.max(2, parseFloat(parsed.alto) || 2.5)),
           forma: parsed.forma === 'irregular' ? 'irregular' : 'rectangular',
           confianza: parsed.confianza || 'media',
+          _v: 3,
         });
       }
 
