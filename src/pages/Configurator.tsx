@@ -858,14 +858,21 @@ export default function Configurator() {
                       <label className="block text-sm font-bold mb-4 uppercase tracking-widest text-brand-muted">3. Encimera</label>
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { id: 'granito', label: 'Granito', icon: '🪨' },
-                          { id: 'quartz', label: 'Quartz', icon: '⬜' },
-                          { id: 'laminado', label: 'Laminado', icon: '🟫' },
-                          { id: 'acero', label: 'Acero inox', icon: '⚙️' },
+                          { id: 'granito', label: 'Granito', img: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?q=80&w=400&auto=format&fit=crop' },
+                          { id: 'quartz', label: 'Quartz', img: 'https://images.unsplash.com/photo-1556909172-54557c7e4fb7?q=80&w=400&auto=format&fit=crop' },
+                          { id: 'laminado', label: 'Laminado', img: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115?q=80&w=400&auto=format&fit=crop' },
+                          { id: 'acero', label: 'Acero inox', img: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?q=80&w=400&auto=format&fit=crop&sat=-100' },
                         ].map(opt => (
                           <button key={opt.id} onClick={() => setConfig({ ...config, encimera: config.encimera === opt.id ? null : opt.id })}
-                            className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-2 text-sm font-bold ${config.encimera === opt.id ? 'border-brand-accent bg-brand-accent/5' : 'border-brand-border bg-white hover:border-brand-accent/30'}`}>
-                            <span>{opt.icon}</span> {opt.label}
+                            className={`relative rounded-2xl border-2 overflow-hidden transition-all aspect-[4/3] ${config.encimera === opt.id ? 'border-brand-accent shadow-lg scale-[1.02]' : 'border-brand-border hover:border-brand-accent/50'}`}>
+                            <img src={opt.img} alt={opt.label} className="absolute inset-0 w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                            {config.encimera === opt.id && (
+                              <div className="absolute top-2 right-2 w-5 h-5 bg-brand-accent rounded-full flex items-center justify-center">
+                                <CheckCircle2 className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            <span className="absolute bottom-2 left-3 text-white font-bold text-sm">{opt.label}</span>
                           </button>
                         ))}
                       </div>
@@ -875,14 +882,21 @@ export default function Configurator() {
                     <label className="block text-sm font-bold mb-4 uppercase tracking-widest text-brand-muted">{config.espacio === 'cocina' || config.espacio === 'ambos' ? '4.' : '3.'} Suelo</label>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { id: 'porcelana', label: 'Porcelana', icon: '⬜' },
-                        { id: 'microcemento', label: 'Microcemento', icon: '🩶' },
-                        { id: 'madera', label: 'Madera/Tarima', icon: '🟤' },
-                        { id: 'vinilo', label: 'Vinilo SPC', icon: '🔲' },
+                        { id: 'porcelana', label: 'Porcelana', img: 'https://images.unsplash.com/photo-1615971677499-5467cbab01b0?q=80&w=400&auto=format&fit=crop' },
+                        { id: 'microcemento', label: 'Microcemento', img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=400&auto=format&fit=crop' },
+                        { id: 'madera', label: 'Madera', img: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?q=80&w=400&auto=format&fit=crop' },
+                        { id: 'vinilo', label: 'Vinilo SPC', img: 'https://images.unsplash.com/photo-1600566752734-2a0cd69b8e17?q=80&w=400&auto=format&fit=crop' },
                       ].map(opt => (
                         <button key={opt.id} onClick={() => setConfig({ ...config, suelo: config.suelo === opt.id ? null : opt.id })}
-                          className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-2 text-sm font-bold ${config.suelo === opt.id ? 'border-brand-accent bg-brand-accent/5' : 'border-brand-border bg-white hover:border-brand-accent/30'}`}>
-                          <span>{opt.icon}</span> {opt.label}
+                          className={`relative rounded-2xl border-2 overflow-hidden transition-all aspect-[4/3] ${config.suelo === opt.id ? 'border-brand-accent shadow-lg scale-[1.02]' : 'border-brand-border hover:border-brand-accent/50'}`}>
+                          <img src={opt.img} alt={opt.label} className="absolute inset-0 w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                          {config.suelo === opt.id && (
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-brand-accent rounded-full flex items-center justify-center">
+                              <CheckCircle2 className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                          <span className="absolute bottom-2 left-3 text-white font-bold text-sm">{opt.label}</span>
                         </button>
                       ))}
                     </div>
