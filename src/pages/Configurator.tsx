@@ -27,11 +27,18 @@ import { saveLead } from '../lib/firebase';
 type ConfigState = {
   codigoPostal: string;
   espacio: 'cocina' | 'bano' | 'ambos' | null;
+  // Medidas cocina (o espacio único)
   largo: number;
   ancho: number;
   alto: number;
   forma: 'rectangular' | 'irregular' | null;
   fotoUrl: string | null;
+  // Medidas baño (solo cuando espacio === 'ambos')
+  largoBano: number;
+  anchoBano: number;
+  altoBano: number;
+  formaBano: 'rectangular' | 'irregular' | null;
+  fotoUrlBano: string | null;
   alcance: 'completa' | 'parcial' | 'acabados' | null;
   antiguedad: string;
   humedades: boolean;
@@ -68,6 +75,8 @@ const STEP_MOOD: Record<number, string> = {
 export default function Configurator() {
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
+  // true = estamos en el subpaso de medidas del baño (solo cuando espacio==='ambos')
+  const [isMedidaBano, setIsMedidaBano] = useState(false);
   const [config, setConfig] = useState<ConfigState>({
     codigoPostal: '',
     espacio: null,
@@ -76,6 +85,11 @@ export default function Configurator() {
     alto: 2.5,
     forma: 'rectangular',
     fotoUrl: null,
+    largoBano: 2,
+    anchoBano: 2,
+    altoBano: 2.5,
+    formaBano: 'rectangular',
+    fotoUrlBano: null,
     alcance: null,
     antiguedad: '5-15',
     humedades: false,
@@ -133,16 +147,38 @@ export default function Configurator() {
     };
   }, [config]);
 
-  const nextStep = () => setStep(s => s + 1);
-  const prevStep = () => setStep(s => Math.max(s - 1, 0));
+  const nextStep = () => {
+    // Cuando estamos en medidas (step 2) y es "ambos" y aún no hemos hecho el baño
+    if (step === 2 && config.espacio === 'ambos' && !isMedidaBano) {
+      setIsMedidaBano(true);
+      return;
+    }
+    setIsMedidaBano(false);
+    setStep(s => s + 1);
+  };
+
+  const prevStep = () => {
+    // Desde medidas baño → volver a medidas cocina
+    if (step === 2 && isMedidaBano) {
+      setIsMedidaBano(false);
+      return;
+    }
+    setIsMedidaBano(false);
+    setStep(s => Math.max(s - 1, 0));
+  };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles[0]) {
       const url = URL.createObjectURL(acceptedFiles[0]);
-      setConfig(c => ({ ...c, fotoUrl: url }));
+      if (isMedidaBano) {
+        setConfig(c => ({ ...c, fotoUrlBano: url }));
+      } else {
+        setConfig(c => ({ ...c, fotoUrl: url }));
+      }
       nextStep();
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMedidaBano, config.espacio]);
   const { getRootProps, getInputProps } = useDropzone({ onDrop, accept: { 'image/*': [] }, maxFiles: 1 });
 
   const handleGenerate = async () => {
@@ -180,15 +216,14 @@ export default function Configurator() {
     }
   };
 
-  // Live room preview dimensions
-  const previewW = Math.min(200, config.largo * 16);
-  const previewH = Math.min(140, config.ancho * 16);
-
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans text-brand-dark">
       {/* Progress Bar */}
       <div className="w-full h-1.5 bg-brand-bg sticky top-0 z-50">
-        <div className="h-full bg-brand-accent transition-all duration-500" style={{ width: `${(step / 8) * 100}%` }} />
+        <div
+          className="h-full bg-brand-accent transition-all duration-500"
+          style={{ width: `${((step + (isMedidaBano ? 0.5 : 0)) / 8) * 100}%` }}
+        />
       </div>
 
       <div className="flex-grow flex flex-col items-center p-4 w-full max-w-4xl mx-auto relative pt-12">
@@ -261,147 +296,62 @@ export default function Configurator() {
             </motion.div>
           )}
 
-          {/* PASO 2: MEDIDAS */}
-          {step === 2 && (
-            <motion.div key="step2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full max-w-2xl">
-              <div className="mb-3 text-brand-accent font-bold tracking-widest text-sm text-center">{STEP_MOOD[2]}</div>
+          {/* PASO 2: MEDIDAS (cocina o espacio único) */}
+          {step === 2 && !isMedidaBano && (
+            <MedidasForm
+              key="medidas-cocina"
+              titulo={
+                config.espacio === 'ambos'
+                  ? 'Primero, las medidas de tu cocina'
+                  : 'Danos las medidas'
+              }
+              subtitulo={
+                config.espacio === 'ambos'
+                  ? 'Calculamos materiales y trabajo para la cocina. Después haremos lo mismo con el baño.'
+                  : 'Calculamos cuánto material y trabajo necesitamos según las dimensiones reales. No te preocupes por la precisión exacta — el técnico lo confirmará en la visita.'
+              }
+              badge={config.espacio === 'ambos' ? '🍳 Cocina — 1 de 2' : config.espacio === 'cocina' ? '🍳 Cocina' : '🛁 Baño'}
+              moodLabel={
+                config.espacio === 'ambos'
+                  ? 'Paso 2A — Empezamos por la cocina.'
+                  : STEP_MOOD[2]
+              }
+              largo={config.largo}
+              ancho={config.ancho}
+              alto={config.alto}
+              forma={config.forma}
+              fotoUrl={config.fotoUrl}
+              area={prices.area}
+              categoria={prices.categoria}
+              categoriaColor={prices.categoriaColor}
+              getRootProps={getRootProps}
+              getInputProps={getInputProps}
+              onLargo={(v: number) => setConfig({ ...config, largo: v })}
+              onAncho={(v: number) => setConfig({ ...config, ancho: v })}
+              onAlto={(v: number) => setConfig({ ...config, alto: v })}
+              onForma={(f) => setConfig({ ...config, forma: f })}
+              onContinue={nextStep}
+              ctaLabel={config.espacio === 'ambos' ? 'Continuar con el baño →' : 'Continuar'}
+            />
+          )}
 
-              <div className="flex flex-col items-center mb-8">
-                <div className="px-4 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
-                  {config.espacio === 'cocina' ? '🍳 Cocina' : config.espacio === 'bano' ? '🛁 Baño' : '✨ Cocina + Baño'}
-                </div>
-                <h2 className="text-4xl font-display font-bold mb-2 text-center">Danos las medidas</h2>
-                <p className="text-brand-muted text-center text-balance max-w-lg text-sm">
-                  Calculamos cuánto material y trabajo necesitamos según las dimensiones reales.
-                  No te preocupes por la precisión exacta — el técnico lo confirmará en la visita.
-                </p>
-              </div>
-
-              <div className="space-y-10">
-                {/* Sliders + live preview */}
-                <div className="bg-brand-bg rounded-3xl border border-brand-border p-6 space-y-6">
-                  <RangeInput
-                    label="Largo (m)"
-                    value={config.largo}
-                    min={1} max={15} step={0.5}
-                    hint="Una cocina típica mide entre 3 y 5 m. Una cama doble mide 2 m."
-                    onChange={(v: number) => setConfig({ ...config, largo: v })}
-                  />
-                  <RangeInput
-                    label="Ancho (m)"
-                    value={config.ancho}
-                    min={1} max={10} step={0.5}
-                    hint="El paso cómodo entre muebles es 1,2 m. Una puerta estándar mide 0,9 m."
-                    onChange={(v: number) => setConfig({ ...config, ancho: v })}
-                  />
-                  <RangeInput
-                    label="Alto (m)"
-                    value={config.alto}
-                    min={2} max={4} step={0.1}
-                    hint="Lo estándar son 2,5 m. Pisos anteriores a 1980 suelen tener 2,8–3 m."
-                    onChange={(v: number) => setConfig({ ...config, alto: v })}
-                  />
-
-                  {/* Live room preview */}
-                  <div className="flex flex-col items-center gap-3 pt-2 border-t border-brand-border">
-                    <span className="text-xs font-bold uppercase tracking-widest text-brand-muted">Vista de planta (aproximada)</span>
-                    <div className="flex items-end justify-center gap-6">
-                      <div className="flex flex-col items-center gap-2">
-                        <svg
-                          width={Math.max(previewW, 60)}
-                          height={Math.max(previewH, 40)}
-                          className="transition-all duration-300"
-                        >
-                          <rect
-                            x="2" y="2"
-                            width={Math.max(previewW - 4, 56)}
-                            height={Math.max(previewH - 4, 36)}
-                            rx="4"
-                            fill="#FEF3ED"
-                            stroke="#C4622D"
-                            strokeWidth="2"
-                          />
-                          <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fontSize="11" fill="#C4622D" fontWeight="bold">
-                            {prices.area} m²
-                          </text>
-                        </svg>
-                      </div>
-                      <div className={`px-3 py-1.5 rounded-full text-xs font-bold ${prices.categoriaColor}`}>
-                        Categoría {prices.categoria}
-                        {prices.categoria === 'Mediano' && ' — lo más habitual'}
-                        {prices.categoria === 'Pequeño' && ' — compacto y eficiente'}
-                        {prices.categoria === 'Grande' && ' — amplio, valoramos bien'}
-                        {prices.categoria === 'XL' && ' — espacio excepcional'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Forma */}
-                <div className="pt-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <label className="block text-sm font-bold uppercase tracking-widest text-brand-muted">Forma del espacio</label>
-                    <Tooltip text="La forma afecta al coste de instalación y el número de cortes de material." />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => setConfig({ ...config, forma: 'rectangular' })}
-                      className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-3 ${config.forma === 'rectangular' ? 'border-brand-accent bg-brand-accent/5 text-brand-accent shadow-sm' : 'border-brand-border bg-white hover:border-brand-accent/30 text-brand-muted'}`}
-                    >
-                      <svg viewBox="0 0 40 28" fill="none" stroke="currentColor" strokeWidth="2" className="w-10 h-7">
-                        <rect x="2" y="2" width="36" height="24" rx="2" />
-                      </svg>
-                      <div className="text-center">
-                        <div className="font-bold">Rectangular</div>
-                        <div className="text-xs opacity-70 mt-0.5">Las cuatro paredes forman un rectángulo</div>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => setConfig({ ...config, forma: 'irregular' })}
-                      className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-3 ${config.forma === 'irregular' ? 'border-brand-accent bg-brand-accent/5 text-brand-accent shadow-sm' : 'border-brand-border bg-white hover:border-brand-accent/30 text-brand-muted'}`}
-                    >
-                      <svg viewBox="0 0 40 28" fill="none" stroke="currentColor" strokeWidth="2" className="w-10 h-7">
-                        <path d="M2 2h20v12h16v12H2z" />
-                      </svg>
-                      <div className="text-center">
-                        <div className="font-bold">Forma L o U</div>
-                        <div className="text-xs opacity-70 mt-0.5">Hay un saliente, columna o forma irregular</div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Foto */}
-                <div className="pt-2">
-                  <div className="flex flex-col mb-4">
-                    <label className="block text-sm font-bold uppercase tracking-widest text-brand-muted">📷 Una foto = presupuesto más exacto</label>
-                    <p className="text-xs text-brand-muted mt-1">
-                      Opcional, pero recomendado — solo tarda 5 segundos. Cualquier foto vale, no tiene que ser profesional.
-                    </p>
-                  </div>
-                  <div {...getRootProps()} className={`p-8 rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer ${config.fotoUrl ? 'border-brand-accent bg-brand-accent/5' : 'border-brand-border bg-brand-bg hover:border-brand-accent/50'}`}>
-                    <input {...getInputProps()} />
-                    {config.fotoUrl ? (
-                      <div className="flex items-center gap-4">
-                        <img src={config.fotoUrl} className="w-20 h-20 object-cover rounded-lg" />
-                        <span className="text-brand-accent font-bold">¡Foto cargada! Toca para cambiar</span>
-                      </div>
-                    ) : (
-                      <div className="text-center">
-                        <UploadCloud className="w-10 h-10 text-brand-muted mb-2 mx-auto" />
-                        <p className="font-bold">Sube una foto de tu {espacioLabel}</p>
-                        <p className="text-xs text-brand-muted mt-1">JPG, PNG o HEIC · máx. 10 MB</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <button onClick={nextStep} className="w-full mt-10 bg-brand-dark text-white py-5 rounded-2xl text-xl font-bold shadow-xl hover:opacity-90 transition-all">
-                Continuar
-              </button>
-              <p className="text-xs text-center text-brand-muted mt-3">Las medidas son aproximadas — el técnico las ajustará en la visita.</p>
-            </motion.div>
+          {/* PASO 2B: MEDIDAS BAÑO (solo cuando espacio==='ambos') */}
+          {step === 2 && isMedidaBano && (
+            <MedidasBanoForm
+              key="medidas-bano"
+              largo={config.largoBano}
+              ancho={config.anchoBano}
+              alto={config.altoBano}
+              forma={config.formaBano}
+              fotoUrl={config.fotoUrlBano}
+              getRootProps={getRootProps}
+              getInputProps={getInputProps}
+              onLargo={(v: number) => setConfig({ ...config, largoBano: v })}
+              onAncho={(v: number) => setConfig({ ...config, anchoBano: v })}
+              onAlto={(v: number) => setConfig({ ...config, altoBano: v })}
+              onForma={(f) => setConfig({ ...config, formaBano: f })}
+              onContinue={nextStep}
+            />
           )}
 
           {/* PASO 3: ALCANCE */}
@@ -821,6 +771,194 @@ export default function Configurator() {
 }
 
 // Sub-componentes internos
+
+type FormaType = 'rectangular' | 'irregular' | null;
+
+function MedidasForm({
+  titulo, subtitulo, badge, moodLabel,
+  largo, ancho, alto, forma, fotoUrl,
+  area, categoria, categoriaColor,
+  getRootProps, getInputProps,
+  onLargo, onAncho, onAlto, onForma, onContinue, ctaLabel
+}: {
+  titulo: string; subtitulo: string; badge: string; moodLabel: string;
+  largo: number; ancho: number; alto: number; forma: FormaType; fotoUrl: string | null;
+  area: number; categoria: string; categoriaColor: string;
+  getRootProps: () => object; getInputProps: () => object;
+  onLargo: (v: number) => void; onAncho: (v: number) => void; onAlto: (v: number) => void;
+  onForma: (f: FormaType) => void; onContinue: () => void; ctaLabel: string;
+}) {
+  const previewW = Math.min(200, largo * 16);
+  const previewH = Math.min(140, ancho * 16);
+  return (
+    <motion.div key="medidas-cocina" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full max-w-2xl">
+      <div className="mb-3 text-brand-accent font-bold tracking-widest text-sm text-center">{moodLabel}</div>
+      <div className="flex flex-col items-center mb-8">
+        <div className="px-4 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold uppercase tracking-wider mb-4">{badge}</div>
+        <h2 className="text-4xl font-display font-bold mb-2 text-center">{titulo}</h2>
+        <p className="text-brand-muted text-center text-balance max-w-lg text-sm">{subtitulo}</p>
+      </div>
+      <MedidasBody
+        largo={largo} ancho={ancho} alto={alto} forma={forma} fotoUrl={fotoUrl}
+        area={area} categoria={categoria} categoriaColor={categoriaColor}
+        previewW={previewW} previewH={previewH}
+        getRootProps={getRootProps} getInputProps={getInputProps}
+        onLargo={onLargo} onAncho={onAncho} onAlto={onAlto} onForma={onForma}
+        fotoLabel="tu espacio"
+      />
+      <button onClick={onContinue} className="w-full mt-10 bg-brand-dark text-white py-5 rounded-2xl text-xl font-bold shadow-xl hover:opacity-90 transition-all">
+        {ctaLabel}
+      </button>
+      <p className="text-xs text-center text-brand-muted mt-3">Las medidas son aproximadas — el técnico las ajustará en la visita.</p>
+    </motion.div>
+  );
+}
+
+function MedidasBanoForm({
+  largo, ancho, alto, forma, fotoUrl,
+  getRootProps, getInputProps,
+  onLargo, onAncho, onAlto, onForma, onContinue
+}: {
+  largo: number; ancho: number; alto: number; forma: FormaType; fotoUrl: string | null;
+  getRootProps: () => object; getInputProps: () => object;
+  onLargo: (v: number) => void; onAncho: (v: number) => void; onAlto: (v: number) => void;
+  onForma: (f: FormaType) => void; onContinue: () => void;
+}) {
+  const area = Math.round(largo * ancho * 10) / 10;
+  const previewW = Math.min(200, largo * 16);
+  const previewH = Math.min(140, ancho * 16);
+  let categoria = 'Pequeño'; let categoriaColor = 'bg-blue-100 text-blue-700';
+  if (area >= 8 && area < 15) { categoria = 'Mediano'; categoriaColor = 'bg-green-100 text-green-700'; }
+  else if (area >= 15 && area < 25) { categoria = 'Grande'; categoriaColor = 'bg-orange-100 text-orange-700'; }
+  else if (area >= 25) { categoria = 'XL'; categoriaColor = 'bg-purple-100 text-purple-700'; }
+  return (
+    <motion.div key="medidas-bano" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="w-full max-w-2xl">
+      <div className="mb-3 text-brand-accent font-bold tracking-widest text-sm text-center">Paso 2B — Ahora el baño.</div>
+      <div className="flex flex-col items-center mb-8">
+        <div className="px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider mb-4">🛁 Baño — 2 de 2</div>
+        <h2 className="text-4xl font-display font-bold mb-2 text-center">Ahora las medidas de tu baño</h2>
+        <p className="text-brand-muted text-center text-balance max-w-lg text-sm">
+          Mismo proceso — en un momento tendrás presupuesto cerrado para los dos espacios.
+        </p>
+      </div>
+      <MedidasBody
+        largo={largo} ancho={ancho} alto={alto} forma={forma} fotoUrl={fotoUrl}
+        area={area} categoria={categoria} categoriaColor={categoriaColor}
+        previewW={previewW} previewH={previewH}
+        getRootProps={getRootProps} getInputProps={getInputProps}
+        onLargo={onLargo} onAncho={onAncho} onAlto={onAlto} onForma={onForma}
+        fotoLabel="tu baño"
+      />
+      <button onClick={onContinue} className="w-full mt-10 bg-brand-dark text-white py-5 rounded-2xl text-xl font-bold shadow-xl hover:opacity-90 transition-all">
+        Continuar →
+      </button>
+      <p className="text-xs text-center text-brand-muted mt-3">Las medidas son aproximadas — el técnico las ajustará en la visita.</p>
+    </motion.div>
+  );
+}
+
+function MedidasBody({
+  largo, ancho, alto, forma, fotoUrl,
+  area, categoria, categoriaColor, previewW, previewH,
+  getRootProps, getInputProps,
+  onLargo, onAncho, onAlto, onForma, fotoLabel
+}: {
+  largo: number; ancho: number; alto: number; forma: FormaType; fotoUrl: string | null;
+  area: number; categoria: string; categoriaColor: string; previewW: number; previewH: number;
+  getRootProps: () => object; getInputProps: () => object;
+  onLargo: (v: number) => void; onAncho: (v: number) => void; onAlto: (v: number) => void;
+  onForma: (f: FormaType) => void; fotoLabel: string;
+}) {
+  return (
+    <div className="space-y-8">
+      <div className="bg-brand-bg rounded-3xl border border-brand-border p-6 space-y-6">
+        <RangeInput label="Largo (m)" value={largo} min={1} max={15} step={0.5}
+          hint="Una cocina típica mide entre 3 y 5 m. Una cama doble mide 2 m."
+          onChange={onLargo} />
+        <RangeInput label="Ancho (m)" value={ancho} min={1} max={10} step={0.5}
+          hint="El paso cómodo entre muebles es 1,2 m. Una puerta estándar mide 0,9 m."
+          onChange={onAncho} />
+        <RangeInput label="Alto (m)" value={alto} min={2} max={4} step={0.1}
+          hint="Lo estándar son 2,5 m. Pisos anteriores a 1980 suelen tener 2,8–3 m."
+          onChange={onAlto} />
+
+        {/* Live room preview */}
+        <div className="flex flex-col items-center gap-3 pt-2 border-t border-brand-border">
+          <span className="text-xs font-bold uppercase tracking-widest text-brand-muted">Vista de planta (aproximada)</span>
+          <div className="flex items-center justify-center gap-6 flex-wrap">
+            <svg width={Math.max(previewW, 60)} height={Math.max(previewH, 40)} className="transition-all duration-300">
+              <rect x="2" y="2" width={Math.max(previewW - 4, 56)} height={Math.max(previewH - 4, 36)}
+                rx="4" fill="#FEF3ED" stroke="#C4622D" strokeWidth="2" />
+              <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fontSize="11" fill="#C4622D" fontWeight="bold">
+                {area} m²
+              </text>
+            </svg>
+            <div className={`px-3 py-1.5 rounded-full text-xs font-bold ${categoriaColor}`}>
+              Categoría {categoria}
+              {categoria === 'Mediano' && ' — lo más habitual'}
+              {categoria === 'Pequeño' && ' — compacto y eficiente'}
+              {categoria === 'Grande' && ' — amplio, valoramos bien'}
+              {categoria === 'XL' && ' — espacio excepcional'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Forma */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <label className="block text-sm font-bold uppercase tracking-widest text-brand-muted">Forma del espacio</label>
+          <Tooltip text="La forma afecta al coste de instalación y el número de cortes de material." />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <button onClick={() => onForma('rectangular')}
+            className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-3 ${forma === 'rectangular' ? 'border-brand-accent bg-brand-accent/5 text-brand-accent shadow-sm' : 'border-brand-border bg-white hover:border-brand-accent/30 text-brand-muted'}`}>
+            <svg viewBox="0 0 40 28" fill="none" stroke="currentColor" strokeWidth="2" className="w-10 h-7">
+              <rect x="2" y="2" width="36" height="24" rx="2" />
+            </svg>
+            <div className="text-center">
+              <div className="font-bold">Rectangular</div>
+              <div className="text-xs opacity-70 mt-0.5">Las cuatro paredes forman un rectángulo</div>
+            </div>
+          </button>
+          <button onClick={() => onForma('irregular')}
+            className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-3 ${forma === 'irregular' ? 'border-brand-accent bg-brand-accent/5 text-brand-accent shadow-sm' : 'border-brand-border bg-white hover:border-brand-accent/30 text-brand-muted'}`}>
+            <svg viewBox="0 0 40 28" fill="none" stroke="currentColor" strokeWidth="2" className="w-10 h-7">
+              <path d="M2 2h20v12h16v12H2z" />
+            </svg>
+            <div className="text-center">
+              <div className="font-bold">Forma L o U</div>
+              <div className="text-xs opacity-70 mt-0.5">Hay un saliente, columna o forma irregular</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Foto */}
+      <div>
+        <div className="flex flex-col mb-4">
+          <label className="block text-sm font-bold uppercase tracking-widest text-brand-muted">📷 Una foto = presupuesto más exacto</label>
+          <p className="text-xs text-brand-muted mt-1">Opcional — solo tarda 5 segundos. Cualquier foto vale, no tiene que ser profesional.</p>
+        </div>
+        <div {...getRootProps()} className={`p-8 rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer ${fotoUrl ? 'border-brand-accent bg-brand-accent/5' : 'border-brand-border bg-brand-bg hover:border-brand-accent/50'}`}>
+          <input {...(getInputProps() as React.InputHTMLAttributes<HTMLInputElement>)} />
+          {fotoUrl ? (
+            <div className="flex items-center gap-4">
+              <img src={fotoUrl} className="w-20 h-20 object-cover rounded-lg" alt="foto" />
+              <span className="text-brand-accent font-bold">¡Foto cargada! Toca para cambiar</span>
+            </div>
+          ) : (
+            <div className="text-center">
+              <UploadCloud className="w-10 h-10 text-brand-muted mb-2 mx-auto" />
+              <p className="font-bold">Sube una foto de {fotoLabel}</p>
+              <p className="text-xs text-brand-muted mt-1">JPG, PNG o HEIC · máx. 10 MB</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function RangeInput({ label, value, min, max, step, hint, onChange }: {
   label: string;
