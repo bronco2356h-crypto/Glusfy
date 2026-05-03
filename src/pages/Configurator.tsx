@@ -2,15 +2,13 @@ import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
-import { 
-  ArrowLeft, 
-  UploadCloud, 
-  GripVertical, 
-  CheckCircle2, 
-  Star, 
-  ShieldCheck, 
-  Clock, 
-  MapPin, 
+import {
+  ArrowLeft,
+  UploadCloud,
+  CheckCircle2,
+  ShieldCheck,
+  Clock,
+  MapPin,
   AlertTriangle,
   Truck,
   Maximize,
@@ -119,7 +117,7 @@ export default function Configurator() {
       nextStep();
     }
   }, []);
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/*': [] }, maxFiles: 1 });
+  const { getRootProps, getInputProps } = useDropzone({ onDrop, accept: { 'image/*': [] }, maxFiles: 1 });
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -143,7 +141,7 @@ export default function Configurator() {
         nombre: config.nombre,
         email: `${config.telefono}@glusfy-customer.com`,
         telefono: config.telefono,
-        espacio: config.espacio === 'ambos' ? 'cocina' : config.espacio || 'cocina',
+        espacio: (config.espacio === 'ambos' || config.espacio === 'cocina') ? 'cocina' : 'baño',
         nivel: config.calidad === 'premium' ? 'premium' : 'esencial',
         paletaElegida: config.estilo || 'default',
         url_foto_subida: config.fotoUrl || '',
@@ -235,9 +233,9 @@ export default function Configurator() {
               
               <div className="space-y-10">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <RangeInput label="Largo (m)" value={config.largo} min={1} max={15} step={0.5} onChange={v => setConfig({...config, largo: v})} />
-                  <RangeInput label="Ancho (m)" value={config.ancho} min={1} max={10} step={0.5} onChange={v => setConfig({...config, ancho: v})} />
-                  <RangeInput label="Alto (m)" value={config.alto} min={2} max={4} step={0.1} onChange={v => setConfig({...config, alto: v})} />
+                  <RangeInput label="Largo (m)" value={config.largo} min={1} max={15} step={0.5} onChange={(v: number) => setConfig({...config, largo: v})} />
+                  <RangeInput label="Ancho (m)" value={config.ancho} min={1} max={10} step={0.5} onChange={(v: number) => setConfig({...config, ancho: v})} />
+                  <RangeInput label="Alto (m)" value={config.alto} min={2} max={4} step={0.1} onChange={(v: number) => setConfig({...config, alto: v})} />
                 </div>
                 
                 <div className="pt-8 border-t border-brand-border">
@@ -536,7 +534,7 @@ export default function Configurator() {
                       <button type="submit" className="w-full bg-brand-accent text-white py-5 rounded-2xl text-xl font-bold shadow-xl hover:opacity-90 transition-all">
                         Reservar mi reforma
                       </button>
-                      <p className="text-[10px] text-brand-muted text-center">Un técnico te llamará en < 24h.</p>
+                      <p className="text-[10px] text-brand-muted text-center">Un técnico te llamará en menos de 24h.</p>
                     </form>
                   ) : (
                     <div className="bg-green-50 p-10 rounded-3xl border-2 border-green-100 text-center">
