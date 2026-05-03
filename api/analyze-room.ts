@@ -51,7 +51,7 @@ STEP 2: The image is VALID only if:
 STEP 3: Respond with JSON:
 
 If INVALID (fewer than 2 specific objects found, or outdoor scene):
-{"valido":false,"objetos_encontrados":[],"descripcion":"<what you actually see in 5 words>"}
+{"valido":false,"objetos_encontrados":[],"descripcion":"<describe en español en 5 palabras qué ves>"}
 
 If VALID (kitchen or bathroom with 2+ specific objects):
 {"valido":true,"objetos_encontrados":["object1","object2"],"largo":<1-15>,"ancho":<1-10>,"alto":<2-4>,"forma":"rectangular|irregular","confianza":"alta|media|baja"}
