@@ -50,6 +50,9 @@ type ConfigState = {
   urgencia: string;
   estilo: string | null;
   calidad: string | null;
+  encimera: string | null;
+  suelo: string | null;
+  alcanceDetalles: string[];
   renderUrl: string | null;
   nombre: string;
   telefono: string;
@@ -101,6 +104,9 @@ export default function Configurator() {
     urgencia: 'flexible',
     estilo: null,
     calidad: null,
+    encimera: null,
+    suelo: null,
+    alcanceDetalles: [],
     renderUrl: null,
     nombre: '',
     telefono: ''
@@ -112,6 +118,9 @@ export default function Configurator() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiEstimated, setAiEstimated] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [isConfirmacion, setIsConfirmacion] = useState(false);
+  const [isAlcanceDetalle, setIsAlcanceDetalle] = useState(false);
+  const [isRenderChoice, setIsRenderChoice] = useState(false);
 
   const espacioLabel = config.espacio ? ESPACIO_LABEL[config.espacio] : 'espacio';
 
@@ -151,9 +160,23 @@ export default function Configurator() {
   }, [config]);
 
   const nextStep = () => {
-    // Cuando estamos en medidas (step 2) y es "ambos" y aún no hemos hecho el baño
-    if (step === 2 && config.espacio === 'ambos' && !isMedidaBano) {
-      setIsMedidaBano(true);
+    if (step === 2 && !isConfirmacion) {
+      if (config.espacio === 'ambos' && !isMedidaBano) {
+        setIsMedidaBano(true);
+        return;
+      }
+      setIsConfirmacion(true);
+      return;
+    }
+    if (step === 2 && isConfirmacion) {
+      setIsConfirmacion(false);
+      setIsMedidaBano(false);
+      setStep(3);
+      return;
+    }
+    if (step === 3 && isAlcanceDetalle) {
+      setIsAlcanceDetalle(false);
+      setStep(4);
       return;
     }
     setIsMedidaBano(false);
@@ -161,9 +184,16 @@ export default function Configurator() {
   };
 
   const prevStep = () => {
-    // Desde medidas baño → volver a medidas cocina
+    if (step === 2 && isConfirmacion) {
+      setIsConfirmacion(false);
+      return;
+    }
     if (step === 2 && isMedidaBano) {
       setIsMedidaBano(false);
+      return;
+    }
+    if (step === 3 && isAlcanceDetalle) {
+      setIsAlcanceDetalle(false);
       return;
     }
     setIsMedidaBano(false);
@@ -229,6 +259,7 @@ export default function Configurator() {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setStep(7);
     await new Promise(res => setTimeout(res, 4000));
     const mockImages: Record<string, string> = {
       moderno: 'https://images.unsplash.com/photo-1556910103-1c02745a872f?q=80&w=1200&auto=format&fit=crop',
@@ -239,7 +270,7 @@ export default function Configurator() {
     };
     setConfig(c => ({ ...c, renderUrl: mockImages[c.estilo || 'moderno'] }));
     setIsGenerating(false);
-    nextStep();
+    setIsRenderChoice(true);
   };
 
   const handleFinalSubmit = async (e: React.FormEvent) => {
@@ -268,7 +299,7 @@ export default function Configurator() {
       <div className="w-full h-1.5 bg-brand-bg sticky top-0 z-50">
         <div
           className="h-full bg-brand-accent transition-all duration-500"
-          style={{ width: `${((step + (isMedidaBano ? 0.5 : 0)) / 8) * 100}%` }}
+          style={{ width: `${Math.min(100, ((step + (isMedidaBano ? 0.4 : 0) + (isConfirmacion ? 0.7 : 0) + (isAlcanceDetalle ? 0.5 : 0) + (isRenderChoice ? 0.5 : 0)) / 8) * 100)}%` }}
         />
       </div>
 
@@ -406,6 +437,92 @@ export default function Configurator() {
             />
           )}
 
+          {/* CONFIRMACIÓN DE MEDIDAS */}
+          {step === 2 && isConfirmacion && (
+            <motion.div key="confirmacion" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full max-w-xl text-center">
+              <div className="mb-3 text-brand-accent font-bold tracking-widest text-sm">Paso 2 — ¡Perfecto!</div>
+              <h2 className="text-4xl font-display font-bold mb-3">Resumen de tu espacio</h2>
+              <p className="text-brand-muted text-sm mb-10">Hemos registrado estas medidas. El técnico las confirmará en la visita gratuita.</p>
+
+              <div className="space-y-4 mb-10">
+                {(config.espacio === 'cocina' || config.espacio === 'bano' || config.espacio === 'ambos') && (
+                  <div className={`rounded-3xl p-8 border-2 border-brand-border ${config.espacio === 'bano' ? 'bg-blue-50' : 'bg-orange-50'}`}>
+                    <div className={`text-xs font-black uppercase tracking-widest mb-4 ${config.espacio === 'bano' ? 'text-blue-600' : 'text-brand-accent'}`}>
+                      {config.espacio === 'bano' ? '🛁 Baño' : '🍳 Cocina'}
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-3xl font-display font-bold text-brand-dark">{config.largo}</div>
+                        <div className="text-xs text-brand-muted uppercase tracking-widest">Largo (m)</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-3xl font-display font-bold text-brand-dark">{config.ancho}</div>
+                        <div className="text-xs text-brand-muted uppercase tracking-widest">Ancho (m)</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-3xl font-display font-bold text-brand-dark">{config.alto}</div>
+                        <div className="text-xs text-brand-muted uppercase tracking-widest">Alto (m)</div>
+                      </div>
+                    </div>
+                    <div className="flex justify-center gap-6 pt-4 border-t border-black/10">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-brand-accent">{Math.round(config.largo * config.ancho * 10) / 10} m²</div>
+                        <div className="text-xs text-brand-muted">Superficie</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-brand-accent">{Math.round(config.largo * config.ancho * config.alto * 10) / 10} m³</div>
+                        <div className="text-xs text-brand-muted">Volumen</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-brand-accent capitalize">{config.forma || '—'}</div>
+                        <div className="text-xs text-brand-muted">Forma</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {config.espacio === 'ambos' && (
+                  <div className="rounded-3xl p-8 border-2 border-brand-border bg-blue-50">
+                    <div className="text-xs font-black uppercase tracking-widest mb-4 text-blue-600">🛁 Baño</div>
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-3xl font-display font-bold text-brand-dark">{config.largoBano}</div>
+                        <div className="text-xs text-brand-muted uppercase tracking-widest">Largo (m)</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-3xl font-display font-bold text-brand-dark">{config.anchoBano}</div>
+                        <div className="text-xs text-brand-muted uppercase tracking-widest">Ancho (m)</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-3xl font-display font-bold text-brand-dark">{config.altoBano}</div>
+                        <div className="text-xs text-brand-muted uppercase tracking-widest">Alto (m)</div>
+                      </div>
+                    </div>
+                    <div className="flex justify-center gap-6 pt-4 border-t border-black/10">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">{Math.round(config.largoBano * config.anchoBano * 10) / 10} m²</div>
+                        <div className="text-xs text-brand-muted">Superficie</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">{Math.round(config.largoBano * config.anchoBano * config.altoBano * 10) / 10} m³</div>
+                        <div className="text-xs text-brand-muted">Volumen</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600 capitalize">{config.formaBano || '—'}</div>
+                        <div className="text-xs text-brand-muted">Forma</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={nextStep} className="w-full bg-brand-accent text-white py-5 rounded-2xl text-xl font-bold shadow-xl hover:opacity-90 transition-all">
+                Todo correcto, continuar →
+              </button>
+              <p className="text-xs text-brand-muted mt-3">Puedes volver atrás para ajustar las medidas.</p>
+            </motion.div>
+          )}
+
           {/* PASO 3: ALCANCE */}
           {step === 3 && (
             <motion.div key="step3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full text-center max-w-4xl">
@@ -445,7 +562,7 @@ export default function Configurator() {
                 ].map(opt => (
                   <button
                     key={opt.id}
-                    onClick={() => { setConfig({ ...config, alcance: opt.id as ConfigState['alcance'] }); nextStep(); }}
+                    onClick={() => { setConfig({ ...config, alcance: opt.id as ConfigState['alcance'], alcanceDetalles: [] }); setIsAlcanceDetalle(true); }}
                     className={`p-8 rounded-3xl border-2 transition-all text-left flex flex-col gap-4 relative ${config.alcance === opt.id ? 'border-brand-accent bg-brand-accent/5 shadow-md' : 'border-brand-border bg-white hover:border-brand-accent/30'}`}
                   >
                     <div className="flex items-start justify-between">
@@ -464,6 +581,66 @@ export default function Configurator() {
               </div>
             </motion.div>
           )}
+
+          {/* SUB-DETALLE ALCANCE */}
+          {step === 3 && isAlcanceDetalle && (() => {
+            const DETALLES: Record<string, { id: string; label: string; icon: string }[]> = {
+              completa: [
+                { id: 'distribucion', label: 'Cambiar distribución de espacios', icon: '🧱' },
+                { id: 'fontaneria', label: 'Rehacer fontanería (tuberías, desagüe)', icon: '🔧' },
+                { id: 'electrica', label: 'Rehacer instalación eléctrica', icon: '⚡' },
+                { id: 'muebles', label: 'Incluir muebles nuevos', icon: '🪑' },
+              ],
+              parcial: [
+                { id: 'muebles', label: 'Cambiar muebles / mobiliario', icon: '🪑' },
+                { id: 'sanitarios', label: 'Cambiar sanitarios / electrodomésticos', icon: '🚿' },
+                { id: 'azulejos', label: 'Cambiar azulejos / revestimientos', icon: '🟫' },
+                { id: 'suelo', label: 'Cambiar suelo', icon: '⬛' },
+              ],
+              acabados: [
+                { id: 'pintura', label: 'Pintura de paredes y techo', icon: '🎨' },
+                { id: 'azulejos', label: 'Azulejos o alicatados', icon: '🟫' },
+                { id: 'suelo', label: 'Suelo nuevo', icon: '⬛' },
+                { id: 'techos', label: 'Techos (escayola, pladur)', icon: '🔲' },
+              ],
+            };
+            const opts = DETALLES[config.alcance || 'completa'] || [];
+            const toggle = (id: string) => {
+              const cur = config.alcanceDetalles;
+              setConfig({ ...config, alcanceDetalles: cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id] });
+            };
+            const TITULOS: Record<string, string> = {
+              completa: '¿Qué necesitas en tu reforma completa?',
+              parcial: '¿Qué partes vas a reformar?',
+              acabados: '¿Qué acabados quieres renovar?',
+            };
+            return (
+              <motion.div key="alcance-detalle" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="w-full max-w-2xl text-center">
+                <div className="mb-3 text-brand-accent font-bold tracking-widest text-sm">Paso 3 — Cuéntanos más.</div>
+                <h2 className="text-4xl font-display font-bold mb-3">{TITULOS[config.alcance || 'completa']}</h2>
+                <p className="text-brand-muted text-sm mb-10">Selecciona todo lo que aplique. No te preocupes si no estás seguro, el técnico te asesorará.</p>
+                <div className="grid grid-cols-1 gap-3 mb-10">
+                  {opts.map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => toggle(opt.id)}
+                      className={`flex items-center gap-4 p-5 rounded-2xl border-2 text-left transition-all ${config.alcanceDetalles.includes(opt.id) ? 'border-brand-accent bg-brand-accent/5' : 'border-brand-border bg-white hover:border-brand-accent/30'}`}
+                    >
+                      <span className="text-2xl shrink-0">{opt.icon}</span>
+                      <span className="font-bold">{opt.label}</span>
+                      <span className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${config.alcanceDetalles.includes(opt.id) ? 'bg-brand-accent border-brand-accent' : 'border-brand-border'}`}>
+                        {config.alcanceDetalles.includes(opt.id) && <CheckCircle2 className="w-3 h-3 text-white" />}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <button onClick={nextStep} className="w-full bg-brand-dark text-white py-5 rounded-2xl text-xl font-bold shadow-xl hover:opacity-90 transition-all">
+                  Continuar →
+                </button>
+                <p className="text-xs text-brand-muted mt-3">Puedes continuar sin seleccionar nada.</p>
+              </motion.div>
+            );
+          })()}
 
           {/* PASO 4: ESTADO ACTUAL */}
           {step === 4 && (
@@ -673,6 +850,44 @@ export default function Configurator() {
                     ))}
                   </div>
                 </div>
+
+                {/* Sub-variantes */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {(config.espacio === 'cocina' || config.espacio === 'ambos') && (
+                    <div>
+                      <label className="block text-sm font-bold mb-4 uppercase tracking-widest text-brand-muted">3. Encimera</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { id: 'granito', label: 'Granito', icon: '🪨' },
+                          { id: 'quartz', label: 'Quartz', icon: '⬜' },
+                          { id: 'laminado', label: 'Laminado', icon: '🟫' },
+                          { id: 'acero', label: 'Acero inox', icon: '⚙️' },
+                        ].map(opt => (
+                          <button key={opt.id} onClick={() => setConfig({ ...config, encimera: config.encimera === opt.id ? null : opt.id })}
+                            className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-2 text-sm font-bold ${config.encimera === opt.id ? 'border-brand-accent bg-brand-accent/5' : 'border-brand-border bg-white hover:border-brand-accent/30'}`}>
+                            <span>{opt.icon}</span> {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-bold mb-4 uppercase tracking-widest text-brand-muted">{config.espacio === 'cocina' || config.espacio === 'ambos' ? '4.' : '3.'} Suelo</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { id: 'porcelana', label: 'Porcelana', icon: '⬜' },
+                        { id: 'microcemento', label: 'Microcemento', icon: '🩶' },
+                        { id: 'madera', label: 'Madera/Tarima', icon: '🟤' },
+                        { id: 'vinilo', label: 'Vinilo SPC', icon: '🔲' },
+                      ].map(opt => (
+                        <button key={opt.id} onClick={() => setConfig({ ...config, suelo: config.suelo === opt.id ? null : opt.id })}
+                          className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-2 text-sm font-bold ${config.suelo === opt.id ? 'border-brand-accent bg-brand-accent/5' : 'border-brand-border bg-white hover:border-brand-accent/30'}`}>
+                          <span>{opt.icon}</span> {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <button
@@ -694,8 +909,37 @@ export default function Configurator() {
             </motion.div>
           )}
 
+          {/* ¿TE GUSTA? — ELECCIÓN TRAS RENDER */}
+          {step === 7 && !isGenerating && isRenderChoice && (
+            <motion.div key="render-choice" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="w-full max-w-2xl text-center">
+              <div className="mb-3 text-brand-accent font-bold tracking-widest text-sm">¡Ya está! Mira cómo queda.</div>
+              <h2 className="text-4xl font-display font-bold mb-3">¿Qué te parece?</h2>
+              <p className="text-brand-muted text-sm mb-8">Esta es la simulación con el estilo <span className="font-bold capitalize">{config.estilo}</span> aplicado a tu {espacioLabel}.</p>
+
+              <div className="rounded-3xl overflow-hidden shadow-2xl mb-10 aspect-video">
+                <img src={config.renderUrl!} className="w-full h-full object-cover" alt="Simulación" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={() => { setIsRenderChoice(false); setStep(6); setConfig(c => ({ ...c, renderUrl: null, estilo: null })); }}
+                  className="py-5 rounded-2xl border-2 border-brand-border text-brand-dark font-bold text-lg hover:border-brand-accent transition-all"
+                >
+                  Cambiar estilo 🔄
+                </button>
+                <button
+                  onClick={() => setIsRenderChoice(false)}
+                  className="py-5 rounded-2xl bg-brand-accent text-white font-bold text-lg shadow-xl hover:opacity-90 transition-all"
+                >
+                  ¡Me encanta! Continuar →
+                </button>
+              </div>
+              <p className="text-xs text-brand-muted mt-4">La imagen es una simulación orientativa. Los acabados finales se confirman en la visita técnica.</p>
+            </motion.div>
+          )}
+
           {/* PASO 8: RESUMEN + PAGO */}
-          {step === 7 && !isGenerating && (
+          {step === 7 && !isGenerating && !isRenderChoice && (
             <motion.div key="step8" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-4xl py-4">
               <div className="text-center mb-8">
                 <div className="text-brand-accent font-bold tracking-widest text-sm mb-2">{STEP_MOOD[7]}</div>
