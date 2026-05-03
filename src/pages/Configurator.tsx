@@ -200,6 +200,7 @@ export default function Configurator() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('[analyze-room] respuesta IA:', data);
         if (data.error === 'not_a_room') {
           // Quitar la foto — no es válida
           if (isMedidaBano) {
