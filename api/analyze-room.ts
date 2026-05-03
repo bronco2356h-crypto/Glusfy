@@ -37,26 +37,38 @@ export default async function handler(req: any, res: any) {
               },
               {
                 type: 'text',
-                text: `Eres un técnico de reformas experto. Analiza esta foto de una cocina o baño y estima sus dimensiones.
+                text: `Eres un técnico de reformas analizando fotos para dar presupuestos.
 
-Usa referencias visuales estándar:
+REGLA PRINCIPAL: La foto debe mostrar el INTERIOR de una cocina o un baño como tema principal. Si hay personas, animales, o si la cocina/baño solo aparece de fondo, NO es válida.
+
+Rechaza la foto (responde con el JSON de error) si:
+- El tema principal son personas o hay personas en primer plano
+- Es un animal
+- Es un exterior, jardín, calle
+- Es un salón, dormitorio, pasillo, oficina
+- Es un objeto, producto, comida
+- La cocina/baño solo aparece de fondo o parcialmente
+
+Solo acepta si la foto muestra CLARAMENTE el interior de una cocina o baño vacíos o en proceso de reforma, donde se pueden medir las paredes.
+
+Si NO es válida, responde EXACTAMENTE:
+{"error":"not_a_room","descripcion":"<describe en español qué ves realmente, máx 8 palabras>"}
+
+Si SÍ es una cocina o baño claramente fotografiado para reforma, estima dimensiones:
 - Altura de puerta: ~2,1 m
-- Altura de encimera de cocina: ~0,9 m
-- Mueble bajo de cocina: ~0,6 m de fondo
-- Sanitario WC: ~0,7 m de largo
-- Azulejo estándar: 20x20 cm o 30x30 cm
-- Altura libre estándar: 2,5 m (pisos modernos), 2,8-3 m (pisos antiguos)
+- Encimera: ~0,9 m alto, ~0,6 m fondo
+- Sanitario WC: ~0,7 m largo
+- Azulejo estándar: 20x20 o 30x30 cm
+- Altura estándar: 2,5 m (moderno), 2,8-3 m (antiguo)
 
-Responde ÚNICAMENTE con un JSON válido, sin texto adicional:
+Responde ÚNICAMENTE con JSON válido, sin texto adicional:
 {
   "largo": <número 1-15 en metros, un decimal>,
   "ancho": <número 1-10 en metros, un decimal>,
   "alto": <número 2-4 en metros, un decimal>,
   "forma": "<'rectangular' o 'irregular'>",
   "confianza": "<'alta', 'media' o 'baja'>"
-}
-
-Si la imagen no es de una habitación o no puedes estimar, devuelve: {"largo":3.5,"ancho":2.5,"alto":2.5,"forma":"rectangular","confianza":"baja"}`,
+}`,
               },
             ],
           },
@@ -74,7 +86,12 @@ Si la imagen no es de una habitación o no puedes estimar, devuelve: {"largo":3.
     const jsonMatch = text.match(/\{[\s\S]*?\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
-      // Clamp values to valid ranges
+
+      // IA detectó que no es cocina/baño
+      if (parsed.error === 'not_a_room') {
+        return res.json({ error: 'not_a_room', descripcion: parsed.descripcion || 'imagen no válida' });
+      }
+
       return res.json({
         largo: Math.min(15, Math.max(1, parseFloat(parsed.largo) || 3.5)),
         ancho: Math.min(10, Math.max(1, parseFloat(parsed.ancho) || 2.5)),
@@ -87,7 +104,6 @@ Si la imagen no es de una habitación o no puedes estimar, devuelve: {"largo":3.
     throw new Error('Could not parse JSON from response');
   } catch (e) {
     console.error('analyze-room error:', e);
-    // Fallback — don't block the user
-    return res.json({ largo: 3.5, ancho: 2.5, alto: 2.5, forma: 'rectangular', confianza: 'baja' });
+    return res.json({ error: 'api_error' });
   }
 }
