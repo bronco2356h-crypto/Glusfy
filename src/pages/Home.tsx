@@ -83,22 +83,22 @@ export default function Home() {
         <section className="py-32 px-4 bg-white">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl font-display font-bold mb-6 tracking-tight">Nuestros Planes</h2>
-              <p className="text-brand-muted text-xl max-w-2xl mx-auto">Precios transparentes calculados por m² para que no pagues ni un céntimo de más.</p>
+              <h2 className="text-4xl md:text-5xl font-display font-bold mb-6 tracking-tight">¿Qué quieres reformar?</h2>
+              <p className="text-brand-muted text-xl max-w-2xl mx-auto">Cuéntanos tu espacio y te damos un presupuesto cerrado en menos de 3 minutos.</p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
               {[
-                { name: 'Reformas de Baño', price: 'desde 2.800€', icon: '🛁', color: 'blue' },
-                { name: 'Reformas de Cocina', price: 'desde 2.800€', icon: '🍳', color: 'orange' }
+                { name: 'Reforma de Baño', desc: 'Presupuesto personalizado según tus medidas y estilo', icon: '🛁', color: 'blue' },
+                { name: 'Reforma de Cocina', desc: 'Presupuesto personalizado según tus medidas y estilo', icon: '🍳', color: 'orange' }
               ].map((item, i) => (
                 <div key={i} className="bg-brand-bg rounded-[3rem] p-10 flex flex-col items-center text-center border border-brand-border hover:border-brand-accent transition-all group">
                   <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center text-4xl mb-8 ${item.color === 'blue' ? 'bg-blue-100' : 'bg-orange-100'}`}>
                     {item.icon}
                   </div>
-                  <h3 className="text-3xl font-display font-bold mb-4">{item.name}</h3>
-                  <div className="text-brand-accent font-black text-2xl mb-8">{item.price}</div>
-                  <button 
+                  <h3 className="text-3xl font-display font-bold mb-3">{item.name}</h3>
+                  <p className="text-brand-muted text-sm mb-8">{item.desc}</p>
+                  <button
                     onClick={() => navigate('/configurador')}
                     className="w-full py-5 rounded-2xl bg-brand-dark text-white font-bold text-lg hover:opacity-90 transition-all shadow-xl"
                   >
