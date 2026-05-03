@@ -37,24 +37,26 @@ export default async function handler(req: any, res: any) {
               },
               {
                 type: 'text',
-                text: `Analiza esta imagen y responde ÚNICAMENTE con JSON válido, sin texto adicional.
+                text: `You are analyzing an image for a home renovation service. Respond ONLY with valid JSON, no other text.
 
-PRIMERO decide si la imagen es válida. Es válida SOLO si muestra claramente el INTERIOR de una cocina o un baño (paredes, suelo y techo visibles, sin cielo ni exterior).
+STEP 1: Identify which of these specific objects you can clearly see in the image:
+Kitchen objects: kitchen_sink, countertop, kitchen_cabinets, stove, oven, refrigerator, kitchen_faucet
+Bathroom objects: toilet, bathtub, shower, bathroom_sink, bathroom_tiles, towel_rail, bidet
 
-NO es válida si ves cualquiera de esto:
-- Exterior: jardín, terraza, piscina, calle, cielo, árboles, césped, horizonte
-- Personas, animales, objetos sueltos
-- Salón, dormitorio, pasillo, escaleras, garaje, oficina
-- Solo fondo: la cocina/baño aparece de fondo de otra cosa
+STEP 2: The image is VALID only if:
+- You can see at least 2 objects from EITHER the kitchen list OR the bathroom list
+- The space is clearly indoors (walls, ceiling, floor all visible)
+- There are NO outdoor elements (sky, garden, pool, trees, street, grass)
 
-Formato de respuesta si NO es válida:
-{"valido":false,"descripcion":"<describe en 5 palabras qué ves>"}
+STEP 3: Respond with JSON:
 
-Formato de respuesta si SÍ es válida (cocina o baño interior):
-{"valido":true,"largo":<1-15>,"ancho":<1-10>,"alto":<2-4>,"forma":"rectangular|irregular","confianza":"alta|media|baja"}
+If INVALID (fewer than 2 specific objects found, or outdoor scene):
+{"valido":false,"objetos_encontrados":[],"descripcion":"<what you actually see in 5 words>"}
 
-Referencias para estimar dimensiones:
-puerta=2.1m alto, encimera=0.9m alto, WC=0.7m largo, altura estándar=2.5m`,
+If VALID (kitchen or bathroom with 2+ specific objects):
+{"valido":true,"objetos_encontrados":["object1","object2"],"largo":<1-15>,"ancho":<1-10>,"alto":<2-4>,"forma":"rectangular|irregular","confianza":"alta|media|baja"}
+
+Dimension references: standard door=2.1m tall, countertop=0.9m high, toilet=0.7m long, standard ceiling=2.5m`,
               },
             ],
           },
@@ -68,10 +70,14 @@ puerta=2.1m alto, encimera=0.9m alto, WC=0.7m largo, altura estándar=2.5m`,
 
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
+    console.log('[analyze-room] raw model text:', text);
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    // Handle markdown code blocks
+    const codeBlock = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+    const jsonMatch = codeBlock ? [codeBlock[0], codeBlock[1]] : text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      console.log('[analyze-room] parsed:', JSON.stringify(parsed));
 
       // Nuevo formato con campo "valido"
       if (parsed.valido === false) {
