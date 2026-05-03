@@ -109,6 +109,8 @@ export default function Configurator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [sliderPos, setSliderPos] = useState(50);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiEstimated, setAiEstimated] = useState(false);
 
   const espacioLabel = config.espacio ? ESPACIO_LABEL[config.espacio] : 'espacio';
 
@@ -167,18 +169,49 @@ export default function Configurator() {
     setStep(s => Math.max(s - 1, 0));
   };
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles[0]) {
-      const url = URL.createObjectURL(acceptedFiles[0]);
-      if (isMedidaBano) {
-        setConfig(c => ({ ...c, fotoUrlBano: url }));
-      } else {
-        setConfig(c => ({ ...c, fotoUrl: url }));
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    if (isMedidaBano) {
+      setConfig(c => ({ ...c, fotoUrlBano: url }));
+    } else {
+      setConfig(c => ({ ...c, fotoUrl: url }));
+    }
+
+    setIsAnalyzing(true);
+    setAiEstimated(false);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const response = await fetch('/api/analyze-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mediaType: file.type }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (isMedidaBano) {
+          setConfig(c => ({ ...c, largoBano: data.largo, anchoBano: data.ancho, altoBano: data.alto, formaBano: data.forma }));
+        } else {
+          setConfig(c => ({ ...c, largo: data.largo, ancho: data.ancho, alto: data.alto, forma: data.forma }));
+        }
+        setAiEstimated(true);
       }
-      nextStep();
+    } catch (e) {
+      console.error('AI room analysis failed:', e);
+    } finally {
+      setIsAnalyzing(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMedidaBano, config.espacio]);
+  }, [isMedidaBano]);
   const { getRootProps, getInputProps } = useDropzone({ onDrop, accept: { 'image/*': [] }, maxFiles: 1 });
 
   const handleGenerate = async () => {
@@ -332,6 +365,8 @@ export default function Configurator() {
               onForma={(f) => setConfig({ ...config, forma: f })}
               onContinue={nextStep}
               ctaLabel={config.espacio === 'ambos' ? 'Continuar con el baño →' : 'Continuar'}
+              isAnalyzing={isAnalyzing}
+              aiEstimated={aiEstimated}
             />
           )}
 
@@ -351,6 +386,8 @@ export default function Configurator() {
               onAlto={(v: number) => setConfig({ ...config, altoBano: v })}
               onForma={(f) => setConfig({ ...config, formaBano: f })}
               onContinue={nextStep}
+              isAnalyzing={isAnalyzing}
+              aiEstimated={aiEstimated}
             />
           )}
 
@@ -779,7 +816,8 @@ function MedidasForm({
   largo, ancho, alto, forma, fotoUrl,
   area, categoria, categoriaColor,
   getRootProps, getInputProps,
-  onLargo, onAncho, onAlto, onForma, onContinue, ctaLabel
+  onLargo, onAncho, onAlto, onForma, onContinue, ctaLabel,
+  isAnalyzing, aiEstimated
 }: {
   titulo: string; subtitulo: string; badge: string; moodLabel: string;
   largo: number; ancho: number; alto: number; forma: FormaType; fotoUrl: string | null;
@@ -787,6 +825,7 @@ function MedidasForm({
   getRootProps: () => object; getInputProps: () => object;
   onLargo: (v: number) => void; onAncho: (v: number) => void; onAlto: (v: number) => void;
   onForma: (f: FormaType) => void; onContinue: () => void; ctaLabel: string;
+  isAnalyzing?: boolean; aiEstimated?: boolean;
 }) {
   const previewW = Math.min(200, largo * 16);
   const previewH = Math.min(140, ancho * 16);
@@ -805,6 +844,7 @@ function MedidasForm({
         getRootProps={getRootProps} getInputProps={getInputProps}
         onLargo={onLargo} onAncho={onAncho} onAlto={onAlto} onForma={onForma}
         fotoLabel="tu espacio"
+        isAnalyzing={isAnalyzing} aiEstimated={aiEstimated}
       />
       <button onClick={onContinue} className="w-full mt-10 bg-brand-dark text-white py-5 rounded-2xl text-xl font-bold shadow-xl hover:opacity-90 transition-all">
         {ctaLabel}
@@ -817,12 +857,14 @@ function MedidasForm({
 function MedidasBanoForm({
   largo, ancho, alto, forma, fotoUrl,
   getRootProps, getInputProps,
-  onLargo, onAncho, onAlto, onForma, onContinue
+  onLargo, onAncho, onAlto, onForma, onContinue,
+  isAnalyzing, aiEstimated
 }: {
   largo: number; ancho: number; alto: number; forma: FormaType; fotoUrl: string | null;
   getRootProps: () => object; getInputProps: () => object;
   onLargo: (v: number) => void; onAncho: (v: number) => void; onAlto: (v: number) => void;
   onForma: (f: FormaType) => void; onContinue: () => void;
+  isAnalyzing?: boolean; aiEstimated?: boolean;
 }) {
   const area = Math.round(largo * ancho * 10) / 10;
   const previewW = Math.min(200, largo * 16);
@@ -848,6 +890,7 @@ function MedidasBanoForm({
         getRootProps={getRootProps} getInputProps={getInputProps}
         onLargo={onLargo} onAncho={onAncho} onAlto={onAlto} onForma={onForma}
         fotoLabel="tu baño"
+        isAnalyzing={isAnalyzing} aiEstimated={aiEstimated}
       />
       <button onClick={onContinue} className="w-full mt-10 bg-brand-dark text-white py-5 rounded-2xl text-xl font-bold shadow-xl hover:opacity-90 transition-all">
         Continuar →
@@ -861,16 +904,29 @@ function MedidasBody({
   largo, ancho, alto, forma, fotoUrl,
   area, categoria, categoriaColor, previewW, previewH,
   getRootProps, getInputProps,
-  onLargo, onAncho, onAlto, onForma, fotoLabel
+  onLargo, onAncho, onAlto, onForma, fotoLabel,
+  isAnalyzing, aiEstimated
 }: {
   largo: number; ancho: number; alto: number; forma: FormaType; fotoUrl: string | null;
   area: number; categoria: string; categoriaColor: string; previewW: number; previewH: number;
   getRootProps: () => object; getInputProps: () => object;
   onLargo: (v: number) => void; onAncho: (v: number) => void; onAlto: (v: number) => void;
   onForma: (f: FormaType) => void; fotoLabel: string;
+  isAnalyzing?: boolean; aiEstimated?: boolean;
 }) {
   return (
     <div className="space-y-8">
+      {/* Badge IA */}
+      {aiEstimated && !isAnalyzing && (
+        <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl px-4 py-3">
+          <span className="text-green-600 text-lg">🤖</span>
+          <div>
+            <p className="text-sm font-bold text-green-800">IA estimó estas medidas</p>
+            <p className="text-xs text-green-600">Ajústalas si no son exactas — el técnico las confirmará en la visita.</p>
+          </div>
+        </div>
+      )}
+
       <div className="bg-brand-bg rounded-3xl border border-brand-border p-6 space-y-6">
         <RangeInput label="Largo (m)" value={largo} min={1} max={15} step={0.5}
           hint="Una cocina típica mide entre 3 y 5 m. Una cama doble mide 2 m."
@@ -942,7 +998,13 @@ function MedidasBody({
         </div>
         <div {...getRootProps()} className={`p-8 rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer ${fotoUrl ? 'border-brand-accent bg-brand-accent/5' : 'border-brand-border bg-brand-bg hover:border-brand-accent/50'}`}>
           <input {...(getInputProps() as React.InputHTMLAttributes<HTMLInputElement>)} />
-          {fotoUrl ? (
+          {isAnalyzing ? (
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin" />
+              <p className="font-bold text-brand-accent">Analizando imagen con IA...</p>
+              <p className="text-xs text-brand-muted">Claude está estimando las medidas de tu espacio</p>
+            </div>
+          ) : fotoUrl ? (
             <div className="flex items-center gap-4">
               <img src={fotoUrl} className="w-20 h-20 object-cover rounded-lg" alt="foto" />
               <span className="text-brand-accent font-bold">¡Foto cargada! Toca para cambiar</span>
