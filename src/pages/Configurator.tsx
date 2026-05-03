@@ -931,17 +931,6 @@ function MedidasBody({
 }) {
   return (
     <div className="space-y-8">
-      {/* Error banner — imagen no válida */}
-      {aiError && !isAnalyzing && (
-        <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
-          <span className="text-red-500 text-lg shrink-0">⚠️</span>
-          <div>
-            <p className="text-sm font-bold text-red-800">Imagen no válida</p>
-            <p className="text-xs text-red-600">{aiError}</p>
-          </div>
-        </div>
-      )}
-
       {/* Badge IA */}
       {aiEstimated && !isAnalyzing && !aiError && (
         <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl px-4 py-3">
@@ -1022,7 +1011,7 @@ function MedidasBody({
           <label className="block text-sm font-bold uppercase tracking-widest text-brand-muted">📷 Una foto = presupuesto más exacto</label>
           <p className="text-xs text-brand-muted mt-1">Opcional — solo tarda 5 segundos. Cualquier foto vale, no tiene que ser profesional.</p>
         </div>
-        <div {...getRootProps()} className={`p-8 rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer ${fotoUrl ? 'border-brand-accent bg-brand-accent/5' : 'border-brand-border bg-brand-bg hover:border-brand-accent/50'}`}>
+        <div {...getRootProps()} className={`p-8 rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer ${fotoUrl ? 'border-brand-accent bg-brand-accent/5' : aiError ? 'border-amber-300 bg-amber-50' : 'border-brand-border bg-brand-bg hover:border-brand-accent/50'}`}>
           <input {...(getInputProps() as React.InputHTMLAttributes<HTMLInputElement>)} />
           {isAnalyzing ? (
             <div className="flex flex-col items-center gap-3">
@@ -1034,6 +1023,13 @@ function MedidasBody({
             <div className="flex items-center gap-4">
               <img src={fotoUrl} className="w-20 h-20 object-cover rounded-lg" alt="foto" />
               <span className="text-brand-accent font-bold">¡Foto cargada! Toca para cambiar</span>
+            </div>
+          ) : aiError ? (
+            <div className="text-center">
+              <span className="text-4xl mb-3 block">🙈</span>
+              <p className="font-bold text-amber-800">Esa foto no parece una cocina ni un baño</p>
+              <p className="text-xs text-amber-700 mt-1 max-w-xs mx-auto">{aiError.replace(/^Esto parece ser "|"\. Sube una foto de tu cocina o baño\.$/g, '')}</p>
+              <p className="text-xs text-brand-muted mt-3">Toca aquí para subir otra foto 📷</p>
             </div>
           ) : (
             <div className="text-center">
