@@ -37,35 +37,40 @@ export default async function handler(req: any, res: any) {
               },
               {
                 type: 'text',
-                text: `Eres un técnico de reformas analizando fotos para dar presupuestos.
+                text: `Eres un validador estricto de imágenes para un servicio de reformas de interiores.
 
-REGLA PRINCIPAL: La foto debe mostrar el INTERIOR de una cocina o un baño como tema principal. Si hay personas, animales, o si la cocina/baño solo aparece de fondo, NO es válida.
+PASO 1 — VALIDACIÓN (obligatorio antes de todo):
+Responde internamente a estas preguntas:
+1. ¿La imagen muestra el INTERIOR (hay techo visible) de una cocina o baño?
+2. ¿El espacio es el tema principal (no el fondo de una foto de personas/animales)?
+3. ¿NO hay cielo, jardín, piscina, terraza, calle ni exterior visible?
+4. ¿NO es un salón, dormitorio, pasillo, oficina, garaje?
 
-Rechaza la foto (responde con el JSON de error) si:
-- El tema principal son personas o hay personas en primer plano
-- Es un animal
-- Es un exterior, jardín, calle
-- Es un salón, dormitorio, pasillo, oficina
-- Es un objeto, producto, comida
-- La cocina/baño solo aparece de fondo o parcialmente
+Si cualquier respuesta es NO → RECHAZA.
 
-Solo acepta si la foto muestra CLARAMENTE el interior de una cocina o baño vacíos o en proceso de reforma, donde se pueden medir las paredes.
+RECHAZA SIEMPRE si ves:
+- Cielo, nubes, horizonte, vegetación exterior, jardín, piscina, terraza
+- Personas o animales como tema principal
+- Salón, comedor, dormitorio, pasillo, garaje, escaleras
+- Comida, objetos sueltos, ropa, pantallas
+- Foto borrosa o demasiado oscura para distinguir el espacio
 
-Si NO es válida, responde EXACTAMENTE:
-{"error":"not_a_room","descripcion":"<describe en español qué ves realmente, máx 8 palabras>"}
+Si rechazas, responde EXACTAMENTE (sin más texto):
+{"error":"not_a_room","descripcion":"<qué ves realmente, máx 6 palabras en español>"}
 
-Si SÍ es una cocina o baño claramente fotografiado para reforma, estima dimensiones:
-- Altura de puerta: ~2,1 m
-- Encimera: ~0,9 m alto, ~0,6 m fondo
-- Sanitario WC: ~0,7 m largo
-- Azulejo estándar: 20x20 o 30x30 cm
-- Altura estándar: 2,5 m (moderno), 2,8-3 m (antiguo)
+SOLO acepta si ves claramente paredes interiores + suelo + techo de una COCINA (encimera, muebles cocina, fregadero) o BAÑO (sanitarios, azulejos de baño, ducha, bañera).
 
-Responde ÚNICAMENTE con JSON válido, sin texto adicional:
+Si aceptas, estima dimensiones con estas referencias:
+- Puerta estándar: 2,1 m alto, 0,8 m ancho
+- Encimera cocina: 0,9 m alto, 0,6 m fondo
+- Sanitario WC: 0,7 m largo
+- Altura libre: 2,5 m (moderno), 2,8 m (antiguo)
+
+Responde ÚNICAMENTE con JSON, sin texto adicional:
 {
-  "largo": <número 1-15 en metros, un decimal>,
-  "ancho": <número 1-10 en metros, un decimal>,
-  "alto": <número 2-4 en metros, un decimal>,
+  "largo": <número 1-15, un decimal>,
+  "ancho": <número 1-10, un decimal>,
+  "alto": <número 2-4, un decimal>,
   "forma": "<'rectangular' o 'irregular'>",
   "confianza": "<'alta', 'media' o 'baja'>"
 }`,

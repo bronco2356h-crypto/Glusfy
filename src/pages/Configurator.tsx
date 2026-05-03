@@ -231,14 +231,17 @@ export default function Configurator() {
       if (response.ok) {
         const data = await response.json();
         console.log('[analyze-room] respuesta IA:', data);
-        if (data.error === 'not_a_room') {
-          // Quitar la foto — no es válida
+        const isInvalid = data.error === 'not_a_room' || data.confianza === 'baja';
+        if (isInvalid) {
           if (isMedidaBano) {
             setConfig(c => ({ ...c, fotoUrlBano: null }));
           } else {
             setConfig(c => ({ ...c, fotoUrl: null }));
           }
-          setAiError(`Esto parece ser "${data.descripcion}". Sube una foto de tu cocina o baño.`);
+          const desc = data.error === 'not_a_room'
+            ? data.descripcion
+            : 'La imagen no muestra claramente una cocina o baño';
+          setAiError(`Parece que eso es "${desc}". Sube una foto del interior de tu cocina o baño.`);
         } else if (!data.error) {
           if (isMedidaBano) {
             setConfig(c => ({ ...c, largoBano: data.largo, anchoBano: data.ancho, altoBano: data.alto, formaBano: data.forma }));
