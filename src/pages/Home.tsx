@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Camera, Palette, Sparkles, CalendarCheck, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
+import { Camera, Palette, Sparkles, CalendarCheck, ShieldCheck, Clock, CheckCircle2, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Home() {
@@ -113,28 +113,21 @@ export default function Home() {
         {/* GARANTÍAS */}
         <section className="py-32 px-4 bg-brand-dark text-white rounded-t-[4rem]">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-8">
-                  <ShieldCheck className="w-8 h-8 text-brand-accent" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+              {[
+                { icon: ShieldCheck, title: t('guarantees.fixedPriceTitle'), desc: t('guarantees.fixedPriceDesc') },
+                { icon: Clock,       title: t('guarantees.guaranteedDateTitle'), desc: t('guarantees.guaranteedDateDesc') },
+                { icon: CheckCircle2, title: t('guarantees.aiRenderTitle'), desc: t('guarantees.aiRenderDesc') },
+                { icon: Award,       title: t('guarantees.warrantyTitle'), desc: t('guarantees.warrantyDesc') },
+              ].map(({ icon: Icon, title, desc }, i) => (
+                <div key={i} className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-8">
+                    <Icon className="w-8 h-8 text-brand-accent" />
+                  </div>
+                  <h3 className="text-2xl font-display font-bold mb-4">{title}</h3>
+                  <p className="text-white/60 leading-relaxed">{desc}</p>
                 </div>
-                <h3 className="text-2xl font-display font-bold mb-4">{t('guarantees.fixedPriceTitle')}</h3>
-                <p className="text-white/60 leading-relaxed">{t('guarantees.fixedPriceDesc')}</p>
-              </div>
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-8">
-                  <Clock className="w-8 h-8 text-brand-accent" />
-                </div>
-                <h3 className="text-2xl font-display font-bold mb-4">{t('guarantees.guaranteedDateTitle')}</h3>
-                <p className="text-white/60 leading-relaxed">{t('guarantees.guaranteedDateDesc')}</p>
-              </div>
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-8">
-                  <CheckCircle2 className="w-8 h-8 text-brand-accent" />
-                </div>
-                <h3 className="text-2xl font-display font-bold mb-4">{t('guarantees.aiRenderTitle')}</h3>
-                <p className="text-white/60 leading-relaxed">{t('guarantees.aiRenderDesc')}</p>
-              </div>
+              ))}
             </div>
           </div>
         </section>

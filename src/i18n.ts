@@ -70,11 +70,13 @@ const resources = {
       },
       guarantees: {
         fixedPriceTitle: "Precio cerrado",
-        fixedPriceDesc: "Lo que presupuestamos es lo que pagas. Sin letra pequeña.",
+        fixedPriceDesc: "Lo que presupuestamos es lo que pagas. Sin letra pequeña ni costes ocultos.",
         guaranteedDateTitle: "Fecha garantizada",
-        guaranteedDateDesc: "Entregamos en el plazo acordado o te descontamos 150€/día de retraso.",
+        guaranteedDateDesc: "Te damos una fecha de inicio y entrega y la cumplimos. Si hay cualquier imprevisto, te avisamos con antelación.",
         aiRenderTitle: "Vista previa real",
-        aiRenderDesc: "Ves el resultado final antes de empezar. Sin comprometerte a nada."
+        aiRenderDesc: "Ves el resultado final antes de empezar. Sin comprometerte a nada.",
+        warrantyTitle: "Garantía 2 años",
+        warrantyDesc: "Toda nuestra obra tiene garantía de 2 años por contrato. Si algo falla, volvemos sin coste adicional."
       },
       footer: {
         legal: "Aviso legal",
