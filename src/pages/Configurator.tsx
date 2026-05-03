@@ -116,6 +116,9 @@ export default function Configurator() {
   const [sliderPos, setSliderPos] = useState(50);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const AI_LIMIT = 3;
+  const getAiCallCount = () => parseInt(sessionStorage.getItem('glusfy_ai_calls') || '0');
+  const incAiCallCount = () => sessionStorage.setItem('glusfy_ai_calls', String(getAiCallCount() + 1));
   const [aiEstimated, setAiEstimated] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [isConfirmacion, setIsConfirmacion] = useState(false);
@@ -230,10 +233,17 @@ export default function Configurator() {
       setConfig(c => ({ ...c, fotoUrl: url }));
     }
 
-    setIsAnalyzing(true);
     setAiEstimated(false);
     setAiError(null);
+
+    // Límite de análisis por sesión
+    if (getAiCallCount() >= AI_LIMIT) {
+      return; // foto cargada para el render, sin análisis IA
+    }
+
+    setIsAnalyzing(true);
     try {
+      incAiCallCount();
       const base64 = await compressImage(file);
 
       const response = await fetch('/api/analyze-room', {
