@@ -10,9 +10,7 @@ import {
   Clock,
   MapPin,
   AlertTriangle,
-  Truck,
-  Maximize,
-  Layers
+  Truck
 } from 'lucide-react';
 import { 
   TRAMOS_PRECIOS, 
@@ -228,8 +226,15 @@ export default function Configurator() {
           {step === 2 && (
             <motion.div key="step2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full max-w-2xl">
               <div className="mb-2 text-brand-accent font-bold tracking-widest text-sm text-center">2 de 8</div>
-              <h2 className="text-4xl font-display font-bold mb-4 text-center">Danos las medidas</h2>
-              <p className="text-brand-muted mb-12 text-center text-balance">Usa los controles para indicar el tamaño aproximado de tu {config.espacio}.</p>
+              <div className="flex flex-col items-center mb-8">
+                <div className="px-4 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+                  {config.espacio === 'cocina' ? '🍳 Reforma de Cocina' : config.espacio === 'bano' ? '🛁 Reforma de Baño' : '✨ Cocina + Baño'}
+                </div>
+                <h2 className="text-4xl font-display font-bold mb-2 text-center">Danos las medidas</h2>
+                <p className="text-brand-muted text-center text-balance max-w-lg">
+                  Calcularemos tu presupuesto basado en las dimensiones reales. ¿Cómo es la planta de tu {config.espacio === 'ambos' ? 'espacio' : config.espacio}?
+                </p>
+              </div>
               
               <div className="space-y-10">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -243,21 +248,30 @@ export default function Configurator() {
                   <div className="grid grid-cols-2 gap-4">
                     <button 
                       onClick={() => setConfig({...config, forma: 'rectangular'})}
-                      className={`p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-3 font-bold ${config.forma === 'rectangular' ? 'border-brand-accent bg-brand-accent/5 text-brand-accent' : 'border-brand-border bg-white hover:border-brand-accent/30'}`}
+                      className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-4 font-bold ${config.forma === 'rectangular' ? 'border-brand-accent bg-brand-accent/5 text-brand-accent shadow-sm' : 'border-brand-border bg-white hover:border-brand-accent/30 text-brand-muted'}`}
                     >
-                      <Maximize className="w-5 h-5" /> Rectangular
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10">
+                        <rect x="3" y="5" width="18" height="14" rx="1" />
+                      </svg>
+                      <span>Rectangular</span>
                     </button>
                     <button 
                       onClick={() => setConfig({...config, forma: 'irregular'})}
-                      className={`p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-3 font-bold ${config.forma === 'irregular' ? 'border-brand-accent bg-brand-accent/5 text-brand-accent' : 'border-brand-border bg-white hover:border-brand-accent/30'}`}
+                      className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-4 font-bold ${config.forma === 'irregular' ? 'border-brand-accent bg-brand-accent/5 text-brand-accent shadow-sm' : 'border-brand-border bg-white hover:border-brand-accent/30 text-brand-muted'}`}
                     >
-                      <Layers className="w-5 h-5" /> L o U
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10">
+                        <path d="M5 5v14h14v-7h-7V5z" />
+                      </svg>
+                      <span>Forma L o U</span>
                     </button>
                   </div>
                 </div>
 
                 <div className="pt-8 border-t border-brand-border">
-                  <label className="block text-sm font-bold mb-4 uppercase tracking-widest text-brand-muted">Foto actual (Recomendado)</label>
+                  <div className="flex flex-col mb-4">
+                    <label className="block text-sm font-bold uppercase tracking-widest text-brand-muted">Foto actual (Recomendado)</label>
+                    <p className="text-[11px] text-brand-muted mt-1">Sube una foto para generar una simulación 3D hiperrealista sobre tu espacio real.</p>
+                  </div>
                   <div {...getRootProps()} className={`p-8 rounded-3xl border-2 border-dashed transition-all flex flex-col items-center justify-center cursor-pointer ${config.fotoUrl ? 'border-brand-accent bg-brand-accent/5' : 'border-brand-border bg-brand-bg hover:border-brand-accent/50'}`}>
                     <input {...getInputProps()} />
                     {config.fotoUrl ? (
