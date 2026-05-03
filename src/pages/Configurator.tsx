@@ -111,6 +111,7 @@ export default function Configurator() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiEstimated, setAiEstimated] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const espacioLabel = config.espacio ? ESPACIO_LABEL[config.espacio] : 'espacio';
 
@@ -182,6 +183,7 @@ export default function Configurator() {
 
     setIsAnalyzing(true);
     setAiEstimated(false);
+    setAiError(null);
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -198,12 +200,22 @@ export default function Configurator() {
 
       if (response.ok) {
         const data = await response.json();
-        if (isMedidaBano) {
-          setConfig(c => ({ ...c, largoBano: data.largo, anchoBano: data.ancho, altoBano: data.alto, formaBano: data.forma }));
-        } else {
-          setConfig(c => ({ ...c, largo: data.largo, ancho: data.ancho, alto: data.alto, forma: data.forma }));
+        if (data.error === 'not_a_room') {
+          // Quitar la foto — no es válida
+          if (isMedidaBano) {
+            setConfig(c => ({ ...c, fotoUrlBano: null }));
+          } else {
+            setConfig(c => ({ ...c, fotoUrl: null }));
+          }
+          setAiError(`Esto parece ser "${data.descripcion}". Sube una foto de tu cocina o baño.`);
+        } else if (!data.error) {
+          if (isMedidaBano) {
+            setConfig(c => ({ ...c, largoBano: data.largo, anchoBano: data.ancho, altoBano: data.alto, formaBano: data.forma }));
+          } else {
+            setConfig(c => ({ ...c, largo: data.largo, ancho: data.ancho, alto: data.alto, forma: data.forma }));
+          }
+          setAiEstimated(true);
         }
-        setAiEstimated(true);
       }
     } catch (e) {
       console.error('AI room analysis failed:', e);
@@ -367,6 +379,7 @@ export default function Configurator() {
               ctaLabel={config.espacio === 'ambos' ? 'Continuar con el baño →' : 'Continuar'}
               isAnalyzing={isAnalyzing}
               aiEstimated={aiEstimated}
+              aiError={aiError}
             />
           )}
 
@@ -388,6 +401,7 @@ export default function Configurator() {
               onContinue={nextStep}
               isAnalyzing={isAnalyzing}
               aiEstimated={aiEstimated}
+              aiError={aiError}
             />
           )}
 
@@ -817,7 +831,7 @@ function MedidasForm({
   area, categoria, categoriaColor,
   getRootProps, getInputProps,
   onLargo, onAncho, onAlto, onForma, onContinue, ctaLabel,
-  isAnalyzing, aiEstimated
+  isAnalyzing, aiEstimated, aiError
 }: {
   titulo: string; subtitulo: string; badge: string; moodLabel: string;
   largo: number; ancho: number; alto: number; forma: FormaType; fotoUrl: string | null;
@@ -825,7 +839,7 @@ function MedidasForm({
   getRootProps: () => object; getInputProps: () => object;
   onLargo: (v: number) => void; onAncho: (v: number) => void; onAlto: (v: number) => void;
   onForma: (f: FormaType) => void; onContinue: () => void; ctaLabel: string;
-  isAnalyzing?: boolean; aiEstimated?: boolean;
+  isAnalyzing?: boolean; aiEstimated?: boolean; aiError?: string | null;
 }) {
   const previewW = Math.min(200, largo * 16);
   const previewH = Math.min(140, ancho * 16);
@@ -844,7 +858,7 @@ function MedidasForm({
         getRootProps={getRootProps} getInputProps={getInputProps}
         onLargo={onLargo} onAncho={onAncho} onAlto={onAlto} onForma={onForma}
         fotoLabel="tu espacio"
-        isAnalyzing={isAnalyzing} aiEstimated={aiEstimated}
+        isAnalyzing={isAnalyzing} aiEstimated={aiEstimated} aiError={aiError}
       />
       <button onClick={onContinue} className="w-full mt-10 bg-brand-dark text-white py-5 rounded-2xl text-xl font-bold shadow-xl hover:opacity-90 transition-all">
         {ctaLabel}
@@ -858,13 +872,13 @@ function MedidasBanoForm({
   largo, ancho, alto, forma, fotoUrl,
   getRootProps, getInputProps,
   onLargo, onAncho, onAlto, onForma, onContinue,
-  isAnalyzing, aiEstimated
+  isAnalyzing, aiEstimated, aiError
 }: {
   largo: number; ancho: number; alto: number; forma: FormaType; fotoUrl: string | null;
   getRootProps: () => object; getInputProps: () => object;
   onLargo: (v: number) => void; onAncho: (v: number) => void; onAlto: (v: number) => void;
   onForma: (f: FormaType) => void; onContinue: () => void;
-  isAnalyzing?: boolean; aiEstimated?: boolean;
+  isAnalyzing?: boolean; aiEstimated?: boolean; aiError?: string | null;
 }) {
   const area = Math.round(largo * ancho * 10) / 10;
   const previewW = Math.min(200, largo * 16);
@@ -890,7 +904,7 @@ function MedidasBanoForm({
         getRootProps={getRootProps} getInputProps={getInputProps}
         onLargo={onLargo} onAncho={onAncho} onAlto={onAlto} onForma={onForma}
         fotoLabel="tu baño"
-        isAnalyzing={isAnalyzing} aiEstimated={aiEstimated}
+        isAnalyzing={isAnalyzing} aiEstimated={aiEstimated} aiError={aiError}
       />
       <button onClick={onContinue} className="w-full mt-10 bg-brand-dark text-white py-5 rounded-2xl text-xl font-bold shadow-xl hover:opacity-90 transition-all">
         Continuar →
@@ -905,19 +919,30 @@ function MedidasBody({
   area, categoria, categoriaColor, previewW, previewH,
   getRootProps, getInputProps,
   onLargo, onAncho, onAlto, onForma, fotoLabel,
-  isAnalyzing, aiEstimated
+  isAnalyzing, aiEstimated, aiError
 }: {
   largo: number; ancho: number; alto: number; forma: FormaType; fotoUrl: string | null;
   area: number; categoria: string; categoriaColor: string; previewW: number; previewH: number;
   getRootProps: () => object; getInputProps: () => object;
   onLargo: (v: number) => void; onAncho: (v: number) => void; onAlto: (v: number) => void;
   onForma: (f: FormaType) => void; fotoLabel: string;
-  isAnalyzing?: boolean; aiEstimated?: boolean;
+  isAnalyzing?: boolean; aiEstimated?: boolean; aiError?: string | null;
 }) {
   return (
     <div className="space-y-8">
+      {/* Error banner — imagen no válida */}
+      {aiError && !isAnalyzing && (
+        <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+          <span className="text-red-500 text-lg shrink-0">⚠️</span>
+          <div>
+            <p className="text-sm font-bold text-red-800">Imagen no válida</p>
+            <p className="text-xs text-red-600">{aiError}</p>
+          </div>
+        </div>
+      )}
+
       {/* Badge IA */}
-      {aiEstimated && !isAnalyzing && (
+      {aiEstimated && !isAnalyzing && !aiError && (
         <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl px-4 py-3">
           <span className="text-green-600 text-lg">🤖</span>
           <div>
