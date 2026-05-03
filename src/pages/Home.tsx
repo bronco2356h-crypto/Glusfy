@@ -28,7 +28,7 @@ export default function Home() {
           <div className="relative z-10 max-w-5xl mx-auto text-center">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               <span className="inline-block py-2 px-4 rounded-full bg-brand-accent/10 text-brand-accent font-bold text-sm mb-6 uppercase tracking-widest">
-                Reforma tu espacio en 9 pasos
+                Reforma tu espacio en 8 pasos
               </span>
               <h1 className="text-6xl md:text-8xl font-display font-bold text-brand-dark mb-8 tracking-tighter text-balance leading-[0.9]">
                 {t('hero.title')}
@@ -89,8 +89,8 @@ export default function Home() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
               {[
-                { name: 'Reformas de Baño', price: 'desde 1.100€/m²', icon: '🛁', color: 'blue' },
-                { name: 'Reformas de Cocina', price: 'desde 1.480€/m²', icon: '🍳', color: 'orange' }
+                { name: 'Reformas de Baño', price: 'desde 2.800€', icon: '🛁', color: 'blue' },
+                { name: 'Reformas de Cocina', price: 'desde 2.800€', icon: '🍳', color: 'orange' }
               ].map((item, i) => (
                 <div key={i} className="bg-brand-bg rounded-[3rem] p-10 flex flex-col items-center text-center border border-brand-border hover:border-brand-accent transition-all group">
                   <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center text-4xl mb-8 ${item.color === 'blue' ? 'bg-blue-100' : 'bg-orange-100'}`}>

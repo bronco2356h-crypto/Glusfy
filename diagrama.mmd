@@ -1,0 +1,115 @@
+flowchart TD
+    %% Estilos
+    classDef main fill:#C4622D,color:#fff,stroke:#333,stroke-width:2px;
+    classDef branch fill:#fef3c7,color:#333,stroke:#C4622D;
+    classDef step fill:#dcfce7,color:#333,stroke:#166534;
+    classDef alert fill:#fecaca,color:#333,stroke:#991b1b;
+    classDef detail fill:#f3e8ff,color:#333,stroke:#7e22ce;
+    classDef wow fill:#fbbf24,color:#333,stroke:#b45309,stroke-width:3px;
+    classDef trust fill:#10b981,color:#fff,stroke:#065f46;
+
+    Start(("INICIO")) --> CP["0. UBICACIÓN<br/>Código Postal"]:::main
+    CP --> S1["1. SELECCIÓN<br/>¿Qué espacio reformas?"]:::main
+
+    S1 --> C["Cocina"]:::branch
+    S1 --> B["Baño"]:::branch
+    S1 --> CB["Cocina + Baño"]:::branch
+
+    subgraph M_C ["2. MEDIDAS (Cocina)"]
+        direction LR
+        L_C[Largo] --- A_C[Ancho] --- H_C[Altura]
+        H_C --- Shape_C{Forma}
+        Shape_C --> Rect_C[Rectangular]
+        Shape_C --> L_U_C[L o U]
+        L_U_C & Rect_C --> Foto_C["📷 Foto cocina"]
+    end
+
+    subgraph M_B ["2. MEDIDAS (Baño)"]
+        direction LR
+        L_B[Largo] --- A_B[Ancho] --- H_B[Altura]
+        H_B --- Shape_B{Forma}
+        Shape_B --> Rect_B[Rectangular]
+        Shape_B --> Irreg_B[Irregular]
+        Irreg_B & Rect_B --> Foto_B["📷 Foto baño"]
+    end
+
+    C --> M_C
+    B --> M_B
+    CB --> M_C --> M_B
+
+    Foto_C & Foto_B --> Conf["Confirmación del espacio<br/>(Resumen técnico m² + m³)"]:::step
+
+    Conf --> S3["3. ALCANCE<br/>¿Qué tipo de reforma?"]:::main
+
+    S3 --> RC["Reforma completa"]:::detail
+    S3 --> RP["Reforma parcial"]:::detail
+    S3 --> SA["Solo acabados"]:::detail
+
+    RC --> RC_D["Distribución / Fontanería<br/>Eléctrica / Muebles?"]:::detail
+    RP --> RP_D["Qué partes? multi<br/>Mantener distribución?"]:::detail
+    SA --> SA_D["Qué acabados? multi<br/>Deterioro visible?"]:::detail
+
+    RC_D & RP_D & SA_D --> S4["4. ESTADO ACTUAL"]:::main
+
+    subgraph S4_Sub ["Detalle Estado Actual"]
+        direction TB
+        S4_Q1["Antigüedad<br/>(0-5 / 5-15 / +15 / Nunca)"]:::detail
+        S4_Q2["¿Humedades o daños agua?<br/>(Sí / No)"]:::detail
+        S4_Q3["¿Elementos ya demolidos?<br/>(Sí / No)"]:::detail
+        S4_Q4["¿Espacio en uso?<br/>(Sí / No)"]:::detail
+        
+        S4_Q1 --> S4_Q2 --> S4_Q3 --> S4_Q4
+    end
+
+    S4 --> S4_Sub
+    
+    %% Validaciones (HUECO 2)
+    S4_Sub --> Val1{¿Humedades +<br/>Acabados?}
+    Val1 -- "Sí" --> Alert1["⚠️ Requiere saneado previo<br/>(Desactiva Solo Acabados)"]:::alert
+    Val1 -- "No" --> Val2{¿+15 años +<br/>Acabados?}
+    
+    Alert1 --> S5
+    Val2 -- "Sí" --> Alert2["⚠️ Recomendamos revisar<br/>instalaciones"]:::alert
+    Val2 -- "No" --> S5["5. ACCESO"]:::main
+
+    subgraph S5_Sub ["Detalle Acceso"]
+        direction TB
+        S5_Q1["Acceso edificio<br/>(Fácil / Escaleras / Complicado)"]:::detail
+        S5_Q2["Zona carga/descarga<br/>(Sí / No)"]:::detail
+        S5_Q3["Planta vivienda<br/>(Input numérico)"]:::detail
+        S5_Q4["Urgencia<br/>(Lo antes posible / +30 días)"]:::detail
+        
+        S5_Q1 --> S5_Q2 --> S5_Q3 --> S5_Q4
+    end
+
+    Alert2 --> S5
+    S5 --> S5_Sub
+    S5_Sub --> S6["6. MATERIALES"]:::main
+
+    subgraph S6_Sub ["Selección de Materiales"]
+        direction TB
+        S6_Q1["Estilo (Cards Visuales)"]:::detail
+        S6_Q2["Calidad (Básico/Est/Prem)"]:::detail
+        S6_Q3["Sub-variantes (Encimera/Suelo)"]:::detail
+        
+        S6_Q1 --> S6_Q2 --> S6_Q3
+    end
+
+    S6 --> S6_Sub
+    
+    S6_Sub --> Wait["⏳ Generando tu cocina/baño..."]:::wow
+    Wait --> Render["🎨 RENDER REALISTA"]:::wow
+    
+    Render --> Choice{¿Te gusta?}
+    Choice -- "Cambiar Estilo" --> S6
+    Choice -- "Me encanta" --> S7["7. RESUMEN + PAGO"]:::main
+
+    subgraph S7_Sub ["Muro de Confianza y Pago"]
+        direction TB
+        S7_Sum["Resumen (IVA incluido)"]:::detail
+        S7_Trust["Garantías + Testimonios"]:::trust
+        S7_Btn["RESERVAR MI REFORMA"]:::trust
+    end
+
+    S7 --> S7_Sub
+    S7_Sub --> End(("VISITA CONFIRMADA")):::main
